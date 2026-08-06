@@ -1,8 +1,10 @@
 # backend/use_cases/rule_engine.py
 from typing import Dict, List, Tuple
+import re
 
 RuleResult = Tuple[bool, int, str]
 
+# Official domains for known brands (to avoid false positives)
 OFFICIAL_DOMAINS = {
     # Banks & Financial
     'kbz': ['kbzbank.com'],
@@ -100,16 +102,21 @@ def _rule_ip_address(features: Dict) -> RuleResult:
     return (False, 0, "")
 
 def _rule_suspicious_tld(features: Dict) -> RuleResult:
-    if features.get('suspicious_tld', 0) == 1:
-        return (True, 25, "သံသယဖြစ်ဖွယ် domain အဆုံးသတ် (.tk, .ml, .cf, .xyz စသည်) ကို သုံးထားသည်။")
+    # Check from features if possible (this may be 0/1, but we can also parse domain)
+    domain = features.get('domain', '')
+    suspicious_tlds = ['.tk', '.ml', '.ga', '.cf', '.xyz', '.top', '.club', '.info', '.website', '.online', '.test', '.help']
+    tld_match = re.search(r'\.[a-z]{2,}$', domain)
+    tld = tld_match.group(0) if tld_match else ''
+    if tld in suspicious_tlds:
+        return (True, 25, f"သံသယဖြစ်ဖွယ် domain အဆုံးသတ် ({tld}) ကို သုံးထားသည်။")
     return (False, 0, "")
 
 def _rule_suspicious_keywords(features: Dict) -> RuleResult:
     count = features.get('suspicious_keyword_count', 0)
     if count >= 3:
-        return (True, 20, f"သံသယဖြစ်ဖွယ် စာလုံးရေ {count} လုံး (login, verify, bonus, free စသည်) ပါဝင်သည်။")
+        return (True, 30, f"သံသယဖြစ်ဖွယ် စာလုံးရေ {count} လုံး (login, verify, bonus, free စသည်) ပါဝင်သည်။")
     elif count >= 1:
-        return (True, 10, f"သံသယဖြစ်ဖွယ် စာလုံး {count} လုံး ပါဝင်သည်။")
+        return (True, 15, f"သံသယဖြစ်ဖွယ် စာလုံး {count} လုံး ပါဝင်သည်။")
     return (False, 0, "")
 
 def _rule_at_symbol(features: Dict) -> RuleResult:
@@ -129,7 +136,9 @@ def _rule_https_in_path(features: Dict) -> RuleResult:
 
 def _rule_domain_hyphens(features: Dict) -> RuleResult:
     count = features.get('domain_hyphen_count', 0)
-    if count >= 2:
+    if count >= 3:
+        return (True, 20, f"Domain တွင် hyphens {count} ခုပါဝင်သဖြင့် brand အတုခိုးရန် ကြိုးစားမှုဖြစ်နိုင်သည်။")
+    elif count >= 2:
         return (True, 10, f"Domain တွင် hyphens {count} ခုပါဝင်သဖြင့် brand အတုခိုးရန် ကြိုးစားမှုဖြစ်နိုင်သည်။")
     return (False, 0, "")
 
@@ -155,7 +164,7 @@ def _rule_brand_impersonation(features: Dict) -> RuleResult:
         if not _is_official_domain(domain, brand):
             suspicious_brands.append(brand)
     if suspicious_brands:
-        return (True, 50, f"ဤ URL သည် {', '.join(suspicious_brands)} ၏ အမှတ်တံဆိပ်ကို အတုခိုးထားသည် — တရားဝင် မဟုတ်နိုင်ပါ။")
+        return (True, 60, f"ဤ URL သည် {', '.join(suspicious_brands)} ၏ အမှတ်တံဆိပ်ကို အတုခိုးထားသည် — တရားဝင် မဟုတ်နိုင်ပါ။")
     return (False, 0, "")
 
 def _rule_domain_numbers(features: Dict) -> RuleResult:

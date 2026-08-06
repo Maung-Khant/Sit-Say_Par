@@ -4,16 +4,17 @@ from backend.core.url import URL
 
 # Suspicious keywords
 SUSPICIOUS_KEYWORDS = [
-    'login', 'signin', 'verify', 'secure', 'account',
-    'update', 'confirm', 'banking', 'password', 'credential',
+    'login', 'signin', 'verify', 'verification', 'secure', 'account',
+    'update', 'upgrade', 'confirm', 'banking', 'password', 'credential',
     'urgent', 'alert', 'limited', 'suspended',
     'free', 'bonus', 'claim', 'gift', 'lucky', 'win', 'prize',
-    'security', 'auth', 'authenticate', 'unlock', 'reactivate'
+    'security', 'auth', 'authenticate', 'unlock', 'reactivate',
+    'support', 'compliance', 'token', 'sync', 'mfa', 'authorization',
+    'override', 'settlement', 'agent', 'portal', 'recover', 'restore'
 ]
 
 # TLDs frequently abused by phishers
-SUSPICIOUS_TLDS = ['.tk', '.ml', '.ga', '.cf', '.xyz', '.top', '.club', '.info', '.website', '.online']
-
+SUSPICIOUS_TLDS = ['.tk', '.ml', '.ga', '.cf', '.xyz', '.top', '.club', '.info', '.website', '.online', '.test', '.help']
 # Comprehensive Myanmar brand list (lowercase)
 MYANMAR_BRANDS = [
     # Banks & Financial / Mobile-Money
