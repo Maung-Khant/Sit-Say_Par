@@ -4,6 +4,7 @@ from backend.core.url import URL
 from backend.use_cases.feature_extractor import extract_features
 from backend.use_cases.rule_engine import run_rule_engine
 from backend.use_cases.risk_scorer import generate_risk_assessment
+from backend.use_cases.explanation_generator import generate_burmese_explanation
 
 # Simple URL extraction regex (matches http/https URLs)
 URL_PATTERN = re.compile(r'(https?://[^\s]+)')
@@ -32,7 +33,10 @@ class AnalyzeURLUseCase:
         # 5. Generate risk assessment
         result = generate_risk_assessment(matched_rules)
 
-        # 6. Add additional info
+        # 6. Add explanation in Burmese
+        result["explanation"] = generate_burmese_explanation(result)
+
+        # 7. Add additional info
         result["url"] = str(url)
         result["features"] = features
         return result
