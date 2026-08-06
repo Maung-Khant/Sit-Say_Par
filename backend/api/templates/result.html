@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <title>စစ်ဆေးမှုရလဒ် - Sit-Say Par</title>
+    <style>
+        body { font-family: sans-serif; max-width: 700px; margin: 2em auto; padding: 1em; }
+        .score { font-size: 2em; font-weight: bold; }
+        .level-low { color: green; }
+        .level-medium { color: orange; }
+        .level-high { color: red; }
+        .level-critical { color: darkred; }
+        pre { white-space: pre-wrap; background: #f5f5f5; padding: 1em; border-radius: 5px; }
+        .back-link { margin-top: 1em; display: block; }
+    </style>
+</head>
+<body>
+    <h1>စစ်ဆေးမှုရလဒ်</h1>
+    <p>URL: <strong>{{ url }}</strong></p>
+    <p>အန္တရာယ်ရှိမှုအဆင့်: 
+        <span class="score level-{{ risk_level.lower() }}">{{ risk_level }}</span>
+    </p>
+    <p>ရမှတ်: {{ risk_score }}/100</p>
+    
+    <h2>အကြောင်းပြချက်</h2>
+    <pre>{{ explanation }}</pre>
+
+    <a href="/" class="back-link">← နောက်ထပ် URL တစ်ခုစစ်ဆေးရန်</a>
+</body>
+</html>

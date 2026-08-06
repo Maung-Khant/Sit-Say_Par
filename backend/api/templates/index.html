@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <title>Sit-Say Par - URL အန္တရာယ်စစ်ဆေးခြင်း</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 2em auto; padding: 1em; }
+        input[type="text"] { width: 100%; padding: 0.5em; font-size: 1em; }
+        button { padding: 0.7em 1.5em; font-size: 1em; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .warning { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Sit-Say Par</h1>
+    <p>URL တစ်ခု၏ အန္တရာယ်ရှိမှုကို စစ်ဆေးရန် အောက်တွင် ထည့်သွင်းပါ။</p>
+    <form action="/analyze-web" method="post">
+        <input type="text" name="url" placeholder="ဥပမာ - http://example.com" required>
+        <br><br>
+        <button type="submit">စစ်ဆေးမည်</button>
+    </form>
+    {% if error %}
+        <p class="warning">{{ error }}</p>
+    {% endif %}
+</body>
+</html>
