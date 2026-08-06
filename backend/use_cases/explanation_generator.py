@@ -2,14 +2,11 @@
 from typing import Dict
 
 def generate_burmese_explanation(risk_assessment: Dict) -> str:
-    """
-    Create a human-readable Burmese explanation from risk assessment data.
-    """
     score = risk_assessment['risk_score']
     level = risk_assessment['risk_level']
     rules = risk_assessment.get('matched_rules', [])
+    ml_score = risk_assessment.get('ml_score')
 
-    # Map risk levels to Burmese
     level_map = {
         "Low": "နည်းပါးသည်",
         "Medium": "အလယ်အလတ်",
@@ -18,8 +15,12 @@ def generate_burmese_explanation(risk_assessment: Dict) -> str:
     }
     burmese_level = level_map.get(level, level)
 
-    # Start building explanation
-    explanation = f"ဤ URL ၏ အန္တရာယ်ရှိမှု အဆင့်မှာ **{burmese_level}** (ရမှတ် {score}/100) ဖြစ်သည်။\n\n"
+    explanation = f"ဤ URL ၏ အန္တရာယ်ရှိမှု အဆင့်မှာ **{burmese_level}** (ရမှတ် {score}/100) ဖြစ်သည်။\n"
+
+    if ml_score is not None:
+        explanation += f"(ML ခန့်မှန်းချက် - {ml_score}/100)\n"
+
+    explanation += "\n"
 
     if level == "Low":
         explanation += "ဤ URL တွင် သံသယဖြစ်ဖွယ် အချက်အလက်များ မတွေ့ရှိပါ။\n"
@@ -28,7 +29,6 @@ def generate_burmese_explanation(risk_assessment: Dict) -> str:
         for i, rule in enumerate(rules, 1):
             explanation += f"{i}. {rule['reason']}\n"
 
-    # Add recommendations
     explanation += "\n**အကြံပြုချက်:**\n"
     if level in ("High", "Critical"):
         explanation += (

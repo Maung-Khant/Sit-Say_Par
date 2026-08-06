@@ -38,7 +38,8 @@ class AnalyzeResponse(BaseModel):
     matched_rules: list
     features: dict
     explanation: str
-
+    ml_score: int | None = None
+    rule_score: int | None = None
 # --- JSON API Endpoint ---
 @app.post("/analyze", response_model=AnalyzeResponse)
 def analyze_url(request: AnalyzeRequest, db: Session = Depends(get_db)):
