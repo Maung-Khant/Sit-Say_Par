@@ -96,3 +96,9 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
             "request": request,
             "error": f"မမှန်ကန်သော URL - {str(e)}"
         })
+
+@app.get("/history", response_class=HTMLResponse)
+async def history(request: Request, db: Session = Depends(get_db)):
+    # Get last 20 logs ordered by most recent
+    logs = db.query(AnalysisLog).order_by(AnalysisLog.created_at.desc()).limit(20).all()
+    return render_template("history.html", {"request": request, "logs": logs})

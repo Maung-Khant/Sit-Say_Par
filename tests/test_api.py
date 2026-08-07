@@ -38,3 +38,8 @@ def test_analyze_web_phishing_url():
     assert response.status_code == 200
     # Should indicate high risk and brand impersonation
     assert "မြင့်မားသည်" in response.text or "အလွန်မြင့်မားသည်" in response.text
+
+def test_history_page():
+    response = client.get("/history")
+    assert response.status_code == 200
+    assert "စစ်ဆေးမှုမှတ်တမ်း" in response.text
