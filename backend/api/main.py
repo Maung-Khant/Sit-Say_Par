@@ -1,5 +1,6 @@
 # backend/api/main.py
 import os
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
@@ -7,24 +8,30 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, HttpUrl
 from sqlalchemy.orm import Session
 from jinja2 import Environment, FileSystemLoader
+from dotenv import load_dotenv
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
 from backend.use_cases.analyze_url import AnalyzeURLUseCase
 from backend.infrastructure.database import init_db, get_db
 from backend.infrastructure.models import AnalysisLog
 
+# Load environment variables from .env file (local development)
+load_dotenv()
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title="Sit-Say_Par API", version="0.2.0")
 
-# Manual Jinja2 setup (avoids Starlette's internal Jinja2Templates cache bug)
+# Manual Jinja2 setup
 BASE_DIR = Path(__file__).resolve().parent
 template_env = Environment(loader=FileSystemLoader(os.path.join(BASE_DIR, "templates")))
 
 def render_template(template_name: str, context: dict) -> HTMLResponse:
     template = template_env.get_template(template_name)
     return HTMLResponse(content=template.render(context))
-
-@app.on_event("startup")
-def on_startup():
-    init_db()
 
 # --- Request/Response Schemas ---
 class AnalyzeRequest(BaseModel):
@@ -40,14 +47,13 @@ class AnalyzeResponse(BaseModel):
     explanation: str
     ml_score: int | None = None
     rule_score: int | None = None
+
 # --- JSON API Endpoint ---
 @app.post("/analyze", response_model=AnalyzeResponse)
 def analyze_url(request: AnalyzeRequest, db: Session = Depends(get_db)):
     try:
         use_case = AnalyzeURLUseCase()
         result = use_case.execute(str(request.url))
-
-        # Save to database
         log = AnalysisLog(
             url=result["url"],
             risk_score=result["risk_score"],
@@ -57,7 +63,6 @@ def analyze_url(request: AnalyzeRequest, db: Session = Depends(get_db)):
         )
         db.add(log)
         db.commit()
-
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -72,8 +77,6 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
     try:
         use_case = AnalyzeURLUseCase()
         result = use_case.execute(url)
-
-        # Save to database
         log = AnalysisLog(
             url=result["url"],
             risk_score=result["risk_score"],
@@ -83,7 +86,6 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
         )
         db.add(log)
         db.commit()
-
         return render_template("result.html", {
             "request": request,
             "url": result["url"],
@@ -99,29 +101,16 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
 
 @app.get("/history", response_class=HTMLResponse)
 async def history(request: Request, db: Session = Depends(get_db)):
-    # Get last 20 logs ordered by most recent
     logs = db.query(AnalysisLog).order_by(AnalysisLog.created_at.desc()).limit(20).all()
     return render_template("history.html", {"request": request, "logs": logs})
 
-# backend/api/main.py – Telegram Bot Webhook Integration
-import os
-import logging
-from dotenv import load_dotenv
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
-
-# Load .env for local development
-load_dotenv()
-
+# ===================== Telegram Bot Integration =====================
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 bot_app = None
 
 if BOT_TOKEN:
-    # Initialize the bot application
     bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
-
-    # Use the same use case as the API
-    use_case = AnalyzeURLUseCase()
+    use_case_bot = AnalyzeURLUseCase()
 
     async def bot_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
@@ -134,7 +123,7 @@ if BOT_TOKEN:
         if not user_text:
             return
         try:
-            result = use_case.execute(user_text)
+            result = use_case_bot.execute(user_text)
             response = (
                 f"🔗 *URL:* {result['url']}\n"
                 f"⚠️ *အန္တရာယ်အဆင့်:* {result['risk_level']} ({result['risk_score']}/100)\n"
@@ -142,29 +131,35 @@ if BOT_TOKEN:
             )
             await update.message.reply_text(response, parse_mode='Markdown')
         except Exception as e:
+            logger.error(f"Bot handler error: {e}", exc_info=True)
             await update.message.reply_text("ဝမ်းနည်းပါတယ်၊ စစ်ဆေးမှုမအောင်မြင်ပါ။")
 
-    # Add handlers
     bot_app.add_handler(CommandHandler("start", bot_start))
     bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, bot_handle_message))
 
-@app.post("/telegram-webhook")
-async def telegram_webhook(update: dict):
-    """Handle incoming updates from Telegram."""
-    if bot_app:
-        await bot_app.process_update(Update.de_json(update, bot_app.bot))
-    return {"status": "ok"}
+    @app.post("/telegram-webhook")
+    async def telegram_webhook(update: dict):
+        """Handle incoming updates from Telegram."""
+        if bot_app:
+            await bot_app.process_update(Update.de_json(update, bot_app.bot))
+        return {"status": "ok"}
+else:
+    logger.warning("TELEGRAM_BOT_TOKEN not set. Bot disabled.")
 
-    import logging
-
+# ===================== Startup Event =====================
 @app.on_event("startup")
-async def set_telegram_webhook():
-    if not BOT_TOKEN:
-        logging.warning("TELEGRAM_BOT_TOKEN not set. Bot disabled.")
-        return
-    webhook_url = "https://sit-say-par.onrender.com/telegram-webhook"
-    try:
-        await bot_app.bot.set_webhook(webhook_url)
-        logging.info(f"Telegram webhook set to {webhook_url}")
-    except Exception as e:
-        logging.error(f"Failed to set webhook: {e}")
+async def on_startup():
+    # Initialize database
+    init_db()
+    logger.info("Database initialized.")
+
+    # Set Telegram webhook if token is available
+    if BOT_TOKEN and bot_app:
+        webhook_url = "https://sit-say-par.onrender.com/telegram-webhook"
+        try:
+            await bot_app.bot.set_webhook(webhook_url)
+            logger.info(f"Telegram webhook set to {webhook_url}")
+        except Exception as e:
+            logger.error(f"Failed to set webhook: {e}")
+    else:
+        logger.warning("Bot token not available; webhook not set.")
