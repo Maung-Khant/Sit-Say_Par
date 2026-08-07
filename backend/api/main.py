@@ -158,7 +158,6 @@ if BOT_TOKEN:
     @app.on_event("startup")
     async def set_telegram_webhook():
         """Set the webhook URL automatically on startup (Render)."""
-        webhook_url = "https://your-app-name.onrender.com/telegram-webhook"
-        # Replace with your actual Render URL after deployment
+        webhook_url = "https://sit-say-par.onrender.com/telegram-webhook"        # Replace with your actual Render URL after deployment
         await bot_app.bot.set_webhook(webhook_url)
         logging.info(f"Telegram webhook set to {webhook_url}")
