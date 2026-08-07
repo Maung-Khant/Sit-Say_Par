@@ -18,6 +18,7 @@ Sit-Say Par is a production-inspired cybersecurity platform designed for Myanmar
 - **Hybrid Detection Engine** – Combines a rule engine (80%) with a Decision Tree ML model (20%) for balanced accuracy and transparency.
 - **History & Logging** – SQLite-backed analysis logs for review.
 - **Clean Architecture** – Modular monolith following domain-driven design, easy to extend and test.
+- **Browser Extension** – Right-click any link or selected text to scan with Sit-Say Par directly from Chrome.
 
 ---
 
