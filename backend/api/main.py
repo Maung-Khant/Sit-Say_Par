@@ -102,3 +102,63 @@ async def history(request: Request, db: Session = Depends(get_db)):
     # Get last 20 logs ordered by most recent
     logs = db.query(AnalysisLog).order_by(AnalysisLog.created_at.desc()).limit(20).all()
     return render_template("history.html", {"request": request, "logs": logs})
+
+# backend/api/main.py – Telegram Bot Webhook Integration
+import os
+import logging
+from dotenv import load_dotenv
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+
+# Load .env for local development
+load_dotenv()
+
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+bot_app = None
+
+if BOT_TOKEN:
+    # Initialize the bot application
+    bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Use the same use case as the API
+    use_case = AnalyzeURLUseCase()
+
+    async def bot_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await update.message.reply_text(
+            "မင်္ဂလာပါ၊ Sit-Say Par Bot မှကြိုဆိုပါတယ်။\n"
+            "သံသယဖြစ်ဖွယ် URL (သို့) စာသားကို ပို့ပေးပါ။"
+        )
+
+    async def bot_handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_text = update.message.text
+        if not user_text:
+            return
+        try:
+            result = use_case.execute(user_text)
+            response = (
+                f"🔗 *URL:* {result['url']}\n"
+                f"⚠️ *အန္တရာယ်အဆင့်:* {result['risk_level']} ({result['risk_score']}/100)\n"
+                f"{result['explanation']}"
+            )
+            await update.message.reply_text(response, parse_mode='Markdown')
+        except Exception as e:
+            await update.message.reply_text("ဝမ်းနည်းပါတယ်၊ စစ်ဆေးမှုမအောင်မြင်ပါ။")
+
+    # Add handlers
+    bot_app.add_handler(CommandHandler("start", bot_start))
+    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, bot_handle_message))
+
+    @app.post("/telegram-webhook")
+    async def telegram_webhook(update: dict):
+        """Handle incoming updates from Telegram."""
+        if bot_app:
+            await bot_app.update_queue.put(Update.de_json(update, bot_app.bot))
+        return {"status": "ok"}
+
+    @app.on_event("startup")
+    async def set_telegram_webhook():
+        """Set the webhook URL automatically on startup (Render)."""
+        webhook_url = "https://your-app-name.onrender.com/telegram-webhook"
+        # Replace with your actual Render URL after deployment
+        await bot_app.bot.set_webhook(webhook_url)
+        logging.info(f"Telegram webhook set to {webhook_url}")
