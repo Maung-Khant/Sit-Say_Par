@@ -103,21 +103,24 @@ async def history(request: Request, db: Session = Depends(get_db)):
     logs = db.query(AnalysisLog).order_by(AnalysisLog.created_at.desc()).limit(20).all()
     return render_template("history.html", {"request": request, "logs": logs})
 
-# Telegram Bot Webhook Integration
+# backend/api/main.py – Telegram Bot Webhook Integration
 import os
 import logging
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
+# Load .env for local development
 load_dotenv()
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 bot_app = None
 
 if BOT_TOKEN:
-    # Initialize bot application
+    # Initialize the bot application
     bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Use the same use case as the API
     use_case = AnalyzeURLUseCase()
 
     async def bot_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -145,27 +148,23 @@ if BOT_TOKEN:
     bot_app.add_handler(CommandHandler("start", bot_start))
     bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, bot_handle_message))
 
-    @app.post("/telegram-webhook")
-    async def telegram_webhook(update: dict):
-        """Process incoming Telegram updates using the bot application."""
-        if bot_app:
-            # Use process_update to handle the update synchronously
-            await bot_app.process_update(Update.de_json(update, bot_app.bot))
-        return {"status": "ok"}
+@app.post("/telegram-webhook")
+async def telegram_webhook(update: dict):
+    """Handle incoming updates from Telegram."""
+    if bot_app:
+        await bot_app.process_update(Update.de_json(update, bot_app.bot))
+    return {"status": "ok"}
 
-    @app.on_event("startup")
-    async def set_telegram_webhook():
-        """Initialize bot and set webhook URL on startup."""
-        if not BOT_TOKEN:
-            logging.warning("TELEGRAM_BOT_TOKEN not set. Bot disabled.")
-            return
-        await bot_app.initialize()  # Important: prepare bot for processing
-        webhook_url = "https://sit-say-par.onrender.com/telegram-webhook"  # ← Replace with your real URL
-        try:
-            await bot_app.bot.set_webhook(webhook_url)
-            logging.info(f"Telegram webhook set to {webhook_url}")
-        except Exception as e:
-            logging.error(f"Failed to set webhook: {e}")
+    import logging
 
-else:
-    logging.warning("TELEGRAM_BOT_TOKEN environment variable missing.")
+@app.on_event("startup")
+async def set_telegram_webhook():
+    if not BOT_TOKEN:
+        logging.warning("TELEGRAM_BOT_TOKEN not set. Bot disabled.")
+        return
+    webhook_url = "https://sit-say-par.onrender.com/telegram-webhook"
+    try:
+        await bot_app.bot.set_webhook(webhook_url)
+        logging.info(f"Telegram webhook set to {webhook_url}")
+    except Exception as e:
+        logging.error(f"Failed to set webhook: {e}")
