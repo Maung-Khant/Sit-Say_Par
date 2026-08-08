@@ -13,11 +13,10 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Sit-Say Par"
+    "default_title": "Sit-Say_Par"
   },
   "background": {
-    "scripts": ["background.js"],
-    "service_worker": "background.js"
+    "scripts": ["background.js"]
   },
   "browser_specific_settings": {
     "gecko": {
