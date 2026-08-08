@@ -17,6 +17,7 @@ from slowapi.util import get_remote_address
 from backend.use_cases.analyze_url import AnalyzeURLUseCase
 from backend.infrastructure.database import init_db, get_db
 from backend.infrastructure.models import AnalysisLog
+from backend.use_cases.explanation_generator import generate_burmese_explanation, get_confidence_level
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -50,6 +51,7 @@ class AnalyzeResponse(BaseModel):
     explanation: str
     ml_score: int | None = None
     rule_score: int | None = None
+    confidence: str | None = None
 
 # --- JSON API Endpoint ---
 @app.post("/analyze", response_model=AnalyzeResponse)
@@ -58,6 +60,9 @@ def analyze_url(request: Request, analyze_req: AnalyzeRequest, db: Session = Dep
     try:
         use_case = AnalyzeURLUseCase()
         result = use_case.execute(str(analyze_req.url))
+
+        # Add confidence level to result
+        result["confidence"] = get_confidence_level(result)
 
         log = AnalysisLog(
             url=result["url"],
@@ -84,6 +89,7 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
         use_case = AnalyzeURLUseCase()
         result = use_case.execute(url)
 
+        # Save to database
         log = AnalysisLog(
             url=result["url"],
             risk_score=result["risk_score"],
@@ -94,17 +100,20 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
         db.add(log)
         db.commit()
 
+        confidence = get_confidence_level(result)
+
         return render_template("result.html", {
             "request": request,
             "url": result["url"],
             "risk_score": result["risk_score"],
             "risk_level": result["risk_level"],
             "explanation": result["explanation"],
+            "confidence": confidence,
         })
     except ValueError as e:
         return render_template("index.html", {
             "request": request,
-            "error": "URL ဖြည့်သွင်းမှု မမှန်ကန်ပါ။ ဥပမာ - http://example.com or https://example.com"
+            "error": "URL ဖြည့်သွင်းမှု မမှန်ကန်ပါ။ ဥပမာ - http://example.com"
         })
 
 @app.get("/history", response_class=HTMLResponse)
@@ -129,9 +138,13 @@ async def bot_handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE)
     try:
         use_case = AnalyzeURLUseCase()
         result = use_case.execute(user_text)
+        confidence = get_confidence_level(result)
+        confidence_map = {"High": "မြင့်မား", "Medium": "အလယ်အလတ်", "Low": "နည်းပါး"}
+
         response = (
             f"🔗 *URL:* {result['url']}\n"
             f"⚠️ *အန္တရာယ်အဆင့်:* {result['risk_level']} ({result['risk_score']}/100)\n"
+            f"📊 *ယုံကြည်စိတ်ချရမှု:* {confidence_map[confidence]}\n"
             f"{result['explanation']}"
         )
         await update.message.reply_text(response, parse_mode='Markdown')
@@ -141,7 +154,6 @@ async def bot_handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 @app.post("/telegram-webhook")
 async def telegram_webhook(update: dict):
-    """Handle incoming updates from Telegram."""
     if bot_app:
         await bot_app.process_update(Update.de_json(update, bot_app.bot))
     return {"status": "ok"}
