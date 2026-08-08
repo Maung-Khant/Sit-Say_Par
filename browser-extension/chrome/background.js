@@ -1,4 +1,3 @@
-// background.js
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "scanWithSitSayPar",
@@ -15,14 +14,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
-// Listen for messages from popup (not used now, but kept for future)
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "analyzeUrl") {
-    fetchResult(request.url).then(sendResponse);
-    return true;
-  }
-});
-
 async function fetchResult(url) {
   try {
     const response = await fetch("https://sit-say-par.onrender.com/analyze", {
@@ -31,7 +22,6 @@ async function fetchResult(url) {
       body: JSON.stringify({ url: url })
     });
     const data = await response.json();
-    // Show notification
     chrome.notifications.create({
       type: "basic",
       iconUrl: "icons/icon48.png",
@@ -39,9 +29,7 @@ async function fetchResult(url) {
       message: `Risk: ${data.risk_level} (${data.risk_score}/100)\n${data.explanation.split('\n').slice(0,2).join(' ')}...`,
       requireInteraction: true
     });
-    return data;
   } catch (error) {
     console.error("Error scanning URL:", error);
-    return { error: "Scan failed" };
   }
 }

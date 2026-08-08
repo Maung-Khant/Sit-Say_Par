@@ -1,11 +1,8 @@
-// popup.js
 document.getElementById('scanBtn').addEventListener('click', async () => {
   const url = document.getElementById('urlInput').value.trim();
   if (!url) return;
-
   const resultDiv = document.getElementById('result');
   resultDiv.innerHTML = "Scanning...";
-
   try {
     const response = await fetch("https://sit-say-par.onrender.com/analyze", {
       method: "POST",

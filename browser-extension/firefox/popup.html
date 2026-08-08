@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Sit-Say Par</title>
+  <style>
+    body { width: 300px; padding: 10px; font-family: sans-serif; }
+    input { width: 100%; padding: 5px; }
+    button { margin-top: 5px; padding: 5px 10px; background: #2c3e50; color: white; border: none; cursor: pointer; }
+    #result { margin-top: 10px; font-size: 0.9em; }
+    .low { color: green; } .medium { color: orange; } .high { color: red; } .critical { color: darkred; }
+  </style>
+</head>
+<body>
+  <h3>Sit-Say Par</h3>
+  <input type="text" id="urlInput" placeholder="Enter URL or text">
+  <button id="scanBtn">Scan</button>
+  <div id="result"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
