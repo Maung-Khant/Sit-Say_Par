@@ -17,8 +17,9 @@ def extract_first_url(text: str) -> str:
 
 class AnalyzeURLUseCase:
     def execute(self, url_string: str) -> dict:
-        # 1. Extract and validate URL
         clean_url = extract_first_url(url_string)
+        if len(clean_url) > 2000:
+            raise ValueError("URL is too long (max 2000 characters)")
         url = URL(clean_url)
 
         # 2. Feature extraction
@@ -33,11 +34,17 @@ class AnalyzeURLUseCase:
         ml_prob = ml_predictor.predict_proba(features)
         if ml_prob is not None:
             ml_score = int(ml_prob * 100)
-            # Weighted combination: 80% rule, 20% ML (prioritize explainability)
-            final_score = int(0.8 * rule_score + 0.2 * ml_score)
-            final_score = min(final_score, 100)
-            if final_score < 1 and (rule_score > 0 or ml_score > 0):
-                final_score = 1
+            # Dynamic weighting based on ML confidence
+            if ml_prob > 0.9:
+                ml_weight = 0.5   # ML very confident -> give it more weight
+            elif ml_prob > 0.7:
+                ml_weight = 0.3
+            else:
+                ml_weight = 0.2   # default low weight
+        final_score = int((1 - ml_weight) * rule_score + ml_weight * ml_score)
+        final_score = min(final_score, 100)
+        if final_score < 1 and (rule_score > 0 or ml_score > 0):
+            final_score = 1
         else:
             ml_score = None
             final_score = rule_score

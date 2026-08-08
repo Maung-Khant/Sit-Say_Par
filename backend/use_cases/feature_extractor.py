@@ -131,7 +131,11 @@ def extract_features(url: URL) -> dict:
     features['path_depth'] = path.count('/') if path else 0
 
     # URL shortener check
-    shorteners = ['bit.ly', 'tinyurl.com', 'goo.gl', 'ow.ly', 't.co']
+    shorteners = [
+    'bit.ly', 'tinyurl.com', 'goo.gl', 'ow.ly', 't.co',
+    'kpay.link', 'wavepay.cc', 'kbzpay.link', 'mpt.shop',
+    'cutt.ly', 'shorturl.at', 'rb.gy'
+    ]
     features['is_shortener'] = 1 if any(s in domain for s in shorteners) else 0
 
     # Brand detection

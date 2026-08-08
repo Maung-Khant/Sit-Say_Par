@@ -11,6 +11,8 @@ from jinja2 import Environment, FileSystemLoader
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from backend.use_cases.analyze_url import AnalyzeURLUseCase
 from backend.infrastructure.database import init_db, get_db
@@ -22,7 +24,11 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Sit-Say_Par API", version="0.2.0")
 
-# Jinja2
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+
+# Jinja2 setup
 BASE_DIR = Path(__file__).resolve().parent
 template_env = Environment(loader=FileSystemLoader(os.path.join(BASE_DIR, "templates")))
 
@@ -30,7 +36,7 @@ def render_template(template_name: str, context: dict) -> HTMLResponse:
     template = template_env.get_template(template_name)
     return HTMLResponse(content=template.render(context))
 
-# Schemas
+# --- Request/Response Schemas ---
 class AnalyzeRequest(BaseModel):
     url: HttpUrl
 
@@ -45,12 +51,14 @@ class AnalyzeResponse(BaseModel):
     ml_score: int | None = None
     rule_score: int | None = None
 
-# API
+# --- JSON API Endpoint ---
 @app.post("/analyze", response_model=AnalyzeResponse)
-def analyze_url(request: AnalyzeRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def analyze_url(request: Request, analyze_req: AnalyzeRequest, db: Session = Depends(get_db)):
     try:
         use_case = AnalyzeURLUseCase()
-        result = use_case.execute(str(request.url))
+        result = use_case.execute(str(analyze_req.url))
+
         log = AnalysisLog(
             url=result["url"],
             risk_score=result["risk_score"],
@@ -64,16 +72,18 @@ def analyze_url(request: AnalyzeRequest, db: Session = Depends(get_db)):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# Web UI
+# --- Web UI Endpoints ---
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return render_template("index.html", {"request": request})
 
 @app.post("/analyze-web", response_class=HTMLResponse)
+@limiter.limit("5/minute")
 async def analyze_web(request: Request, url: str = Form(...), db: Session = Depends(get_db)):
     try:
         use_case = AnalyzeURLUseCase()
         result = use_case.execute(url)
+
         log = AnalysisLog(
             url=result["url"],
             risk_score=result["risk_score"],
@@ -83,6 +93,7 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
         )
         db.add(log)
         db.commit()
+
         return render_template("result.html", {
             "request": request,
             "url": result["url"],
@@ -93,7 +104,7 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
     except ValueError as e:
         return render_template("index.html", {
             "request": request,
-            "error": f"မမှန်ကန်သော URL - {str(e)}"
+            "error": "URL ဖြည့်သွင်းမှု မမှန်ကန်ပါ။ ဥပမာ - http://example.com or https://example.com"
         })
 
 @app.get("/history", response_class=HTMLResponse)
@@ -101,7 +112,7 @@ async def history(request: Request, db: Session = Depends(get_db)):
     logs = db.query(AnalysisLog).order_by(AnalysisLog.created_at.desc()).limit(20).all()
     return render_template("history.html", {"request": request, "logs": logs})
 
-# Telegram Bot handlers (defined outside BOT_TOKEN block for clarity)
+# ===================== Telegram Bot Integration =====================
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 bot_app = None
 
