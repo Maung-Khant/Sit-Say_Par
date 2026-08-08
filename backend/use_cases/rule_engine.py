@@ -47,7 +47,6 @@ OFFICIAL_DOMAINS = {
     'wavemoney': ['wavemoney.com.mm'],
     'wave pay': ['wavemoney.com.mm'],
     'wavepay': ['wavemoney.com.mm'],
-    # နောက်ထပ် ဘဏ်များအတွက် official domain များ (အသစ်ထည့်ရန်)
     'mab': ['mabbank.com'],                  # Myanma Apex Bank
     'myanma apex bank': ['mabbank.com'],
     'mob': ['mob.com.mm'],                   # Myanma Oriental Bank
@@ -201,9 +200,9 @@ def _rule_suspicious_tld(features: Dict) -> RuleResult:
 def _rule_suspicious_keywords(features: Dict) -> RuleResult:
     count = features.get('suspicious_keyword_count', 0)
     if count >= 3:
-        return (True, 30, f"သံသယဖြစ်ဖွယ် စာလုံးရေ {count} လုံး (login, verify, bonus, free စသည်) ပါဝင်သည်။")
+        return (True, 35, f"သံသယဖြစ်ဖွယ် စာလုံးရေ {count} လုံး (login, verify, bonus, free စသည်) ပါဝင်သည်။")
     elif count >= 1:
-        return (True, 15, f"သံသယဖြစ်ဖွယ် စာလုံး {count} လုံး ပါဝင်သည်။")
+        return (True, 20, f"သံသယဖြစ်ဖွယ် စာလုံး {count} လုံး ပါဝင်သည်။")
     return (False, 0, "")
 
 def _rule_at_symbol(features: Dict) -> RuleResult:
@@ -224,9 +223,9 @@ def _rule_https_in_path(features: Dict) -> RuleResult:
 def _rule_domain_hyphens(features: Dict) -> RuleResult:
     count = features.get('domain_hyphen_count', 0)
     if count >= 3:
-        return (True, 20, f"Domain တွင် hyphens {count} ခုပါဝင်သဖြင့် brand အတုခိုးရန် ကြိုးစားမှုဖြစ်နိုင်သည်။")
+        return (True, 25, f"Domain တွင် hyphens {count} ခုပါဝင်သဖြင့် brand အတုခိုးရန် ကြိုးစားမှုဖြစ်နိုင်သည်။")
     elif count >= 2:
-        return (True, 10, f"Domain တွင် hyphens {count} ခုပါဝင်သဖြင့် brand အတုခိုးရန် ကြိုးစားမှုဖြစ်နိုင်သည်။")
+        return (True, 15, f"Domain တွင် hyphens {count} ခုပါဝင်သဖြင့် brand အတုခိုးရန် ကြိုးစားမှုဖြစ်နိုင်သည်။")
     return (False, 0, "")
 
 def _rule_shortener(features: Dict) -> RuleResult:
@@ -251,7 +250,7 @@ def _rule_brand_impersonation(features: Dict) -> RuleResult:
         if not _is_official_domain(domain, brand):
             suspicious_brands.append(brand)
     if suspicious_brands:
-        return (True, 60, f"ဤ URL သည် {', '.join(suspicious_brands)} ၏ အမှတ်တံဆိပ်ကို အတုခိုးထားသည် — တရားဝင် မဟုတ်နိုင်ပါ။")
+        return (True, 70, f"ဤ URL သည် {', '.join(suspicious_brands)} ၏ အမှတ်တံဆိပ်ကို အတုခိုးထားသည် — တရားဝင် မဟုတ်နိုင်ပါ။")
     return (False, 0, "")
 
 def _rule_domain_numbers(features: Dict) -> RuleResult:
