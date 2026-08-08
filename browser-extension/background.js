@@ -1,4 +1,7 @@
 // background.js
+if (typeof browser !== 'undefined') {
+  globalThis.chrome = browser;
+}
 chrome.runtime.onInstalled.addListener(() => {
   console.log("Extension installed, creating context menu...");
   chrome.contextMenus.create({
