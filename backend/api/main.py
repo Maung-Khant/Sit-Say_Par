@@ -113,7 +113,7 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
     except ValueError as e:
         return render_template("index.html", {
             "request": request,
-            "error": "URL ဖြည့်သွင်းမှု မမှန်ကန်ပါ။ ဥပမာ - http://example.com"
+            "error": "URL ဖြည့်သွင်းမှု မမှန်ကန်ပါ။ ဥပမာ - http://example.com or https://example.com "
         })
 
 @app.get("/history", response_class=HTMLResponse)

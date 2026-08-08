@@ -151,6 +151,14 @@ def extract_features(url: URL) -> dict:
     # Domain digit count
     features['domain_digit_count'] = sum(c.isdigit() for c in domain)
 
+# Homograph detection: check if domain contains non-ASCII characters (IDN)
+    try:
+        import idna
+        idna.encode(domain)  # If domain is already punycode, this won't raise
+        features['has_idn'] = 1 if any(ord(c) > 127 for c in domain) else 0
+    except:
+        features['has_idn'] = 0
+
     # Include domain string for rule engine
     features['domain'] = domain
 

@@ -1,12 +1,17 @@
 # backend/use_cases/rule_engine.py
-from typing import Dict, List, Tuple
 import re
+from datetime import datetime
+from typing import Dict, List, Tuple
+
+import whois
 
 RuleResult = Tuple[bool, int, str]
 
-# Official domains for known brands (to avoid false positives)
+# -------------------------------------------------------------------
+# Official domains – prevents false positives on legitimate sites
+# -------------------------------------------------------------------
 OFFICIAL_DOMAINS = {
-    # Banks & Financial (ယခင်ရှိပြီးသား + အသစ်ထပ်ဖြည့်)
+    # Banks & Financial
     'kbz': ['kbzbank.com'],
     'kbz bank': ['kbzbank.com'],
     'kbzbank': ['kbzbank.com'],
@@ -47,25 +52,25 @@ OFFICIAL_DOMAINS = {
     'wavemoney': ['wavemoney.com.mm'],
     'wave pay': ['wavemoney.com.mm'],
     'wavepay': ['wavemoney.com.mm'],
-    'mab': ['mabbank.com'],                  # Myanma Apex Bank
+    'mab': ['mabbank.com'],
     'myanma apex bank': ['mabbank.com'],
-    'mob': ['mob.com.mm'],                   # Myanma Oriental Bank
+    'mob': ['mob.com.mm'],
     'myanma oriental bank': ['mob.com.mm'],
-    'smidb': ['smidb.com'],                  # Small & Medium Industrial Development Bank
+    'smidb': ['smidb.com'],
     'small and medium industrial development bank': ['smidb.com'],
-    'yub': ['yub.com.mm'],                   # Yangon United Bank (if official)
+    'yub': ['yub.com.mm'],
     'yangon united bank': ['yub.com.mm'],
-    'gtb': ['gtb.com.mm'],                   # Global Treasure Bank
+    'gtb': ['gtb.com.mm'],
     'global treasure bank': ['gtb.com.mm'],
-    'shwe bank': ['shwebank.com'],           # Shwe Bank (if official)
-    'rural development bank': ['ruralbank.gov.mm'], # example, adjust
-    'advans myanmar': ['advans.com.mm'],     # Advans Myanmar
+    'shwe bank': ['shwebank.com'],
+    'rural development bank': ['ruralbank.gov.mm'],
+    'advans myanmar': ['advans.com.mm'],
     'proximity finance': ['proximityfinance.com.mm'],
-    'ok dollar': ['okdollar.com'],           # OK Dollar official
+    'ok dollar': ['okdollar.com'],
     'okdollar': ['okdollar.com'],
-    'true money': ['truemoney.com.mm'],      # TrueMoney Myanmar
+    'true money': ['truemoney.com.mm'],
     'truemoney': ['truemoney.com.mm'],
-    'global money': ['globalmoney.com.mm'],  # if exists
+    'global money': ['globalmoney.com.mm'],
     'citizens bank': ['citizensbank.com.mm'],
     'myanmar citizens bank': ['citizensbank.com.mm'],
     'mcb': ['mcb.com.mm'],
@@ -127,18 +132,18 @@ OFFICIAL_DOMAINS = {
     'dhl': ['dhl.com'],
     'fedex': ['fedex.com'],
     'ups': ['ups.com'],
-    'royal express': ['royalexpress.com.mm'],   # if official exists
+    'royal express': ['royalexpress.com.mm'],
     'yangon door2door': ['yangondoor2door.com'],
     'j&t express': ['jtexpress.com'],
     'jt express': ['jtexpress.com'],
 
-    # Government Departments & Public Bodies (အစိုးရဌာနများ)
+    # Government Departments & Public Bodies
     'ird': ['ird.gov.mm'],
     'internal revenue department': ['ird.gov.mm'],
     'dme': ['dme.gov.mm'],
     'department of myanmar examinations': ['dme.gov.mm'],
-    'mrf': ['mrf.gov.mm'],                     # example, adjust
-    'myanmar immigration': ['mip.gov.mm'],      # Ministry of Immigration and Population
+    'mrf': ['mrf.gov.mm'],
+    'myanmar immigration': ['mip.gov.mm'],
     'immigration department': ['mip.gov.mm'],
     'ycdc': ['ycdc.gov.mm'],
     'yangon city development committee': ['ycdc.gov.mm'],
@@ -159,9 +164,9 @@ OFFICIAL_DOMAINS = {
 
     # Other Notable Organizations
     'kpmg': ['kpmg.com.mm'],
-    'quick loan': ['quickloan.com.mm'],   # if official
+    'quick loan': ['quickloan.com.mm'],
     'quickloan': ['quickloan.com.mm'],
-    'air thanlwin': ['airthanlwin.com'],  # official?
+    'air thanlwin': ['airthanlwin.com'],
     'myanmar national airlines': ['flymna.com'],
     'man airlines': ['flymna.com'],
     'air kbz': ['airkbz.com'],
@@ -171,8 +176,9 @@ OFFICIAL_DOMAINS = {
     'cdsg': ['cdsg.com.mm'],
     'max myanmar': ['maxmyanmar.com'],
     'shwe taung': ['shwetaung.com.mm'],
-    'yoma strategic holdings': ['yoma.com.mm'],   # yoma already covered
+    'yoma strategic holdings': ['yoma.com.mm'],
 }
+
 
 def _is_official_domain(domain: str, brand: str) -> bool:
     official_list = OFFICIAL_DOMAINS.get(brand, [])
@@ -182,20 +188,43 @@ def _is_official_domain(domain: str, brand: str) -> bool:
             return True
     return False
 
+
+# -------------------------------------------------------------------
+# WHOIS helper
+# -------------------------------------------------------------------
+def get_domain_age_days(domain: str) -> int | None:
+    """Return domain age in days, or None if lookup fails."""
+    try:
+        w = whois.whois(domain)
+        creation_date = w.creation_date
+        if isinstance(creation_date, list):
+            creation_date = creation_date[0]
+        if creation_date:
+            return (datetime.now() - creation_date).days
+    except Exception:
+        pass
+    return None
+
+
+# -------------------------------------------------------------------
+# Rule functions
+# -------------------------------------------------------------------
 def _rule_ip_address(features: Dict) -> RuleResult:
     if features.get('is_ip', 0) == 1:
         return (True, 30, "IP လိပ်စာကို တိုက်ရိုက်အသုံးပြုထားသည် (domain name အစား)။")
     return (False, 0, "")
 
+
 def _rule_suspicious_tld(features: Dict) -> RuleResult:
-    # Check from features if possible (this may be 0/1, but we can also parse domain)
     domain = features.get('domain', '')
-    suspicious_tlds = ['.tk', '.ml', '.ga', '.cf', '.xyz', '.top', '.club', '.info', '.website', '.online', '.test', '.help']
+    suspicious_tlds = ['.tk', '.ml', '.ga', '.cf', '.xyz', '.top', '.club',
+                       '.info', '.website', '.online', '.test', '.help']
     tld_match = re.search(r'\.[a-z]{2,}$', domain)
     tld = tld_match.group(0) if tld_match else ''
     if tld in suspicious_tlds:
-        return (True, 25, f"သံသယဖြစ်ဖွယ် domain အဆုံးသတ် ({tld}) ကို သုံးထားသည်။")
+        return (True, 30, f"သံသယဖြစ်ဖွယ် domain အဆုံးသတ် ({tld}) ကို သုံးထားသည်။")
     return (False, 0, "")
+
 
 def _rule_suspicious_keywords(features: Dict) -> RuleResult:
     count = features.get('suspicious_keyword_count', 0)
@@ -205,20 +234,24 @@ def _rule_suspicious_keywords(features: Dict) -> RuleResult:
         return (True, 20, f"သံသယဖြစ်ဖွယ် စာလုံး {count} လုံး ပါဝင်သည်။")
     return (False, 0, "")
 
+
 def _rule_at_symbol(features: Dict) -> RuleResult:
     if features.get('has_at_symbol', 0) == 1:
         return (True, 20, "URL တွင် '@' သင်္ကေတ ပါဝင်သည် — ရှေ့ပိုင်းကို browser က လျစ်လျူရှုနိုင်သည်။")
     return (False, 0, "")
+
 
 def _rule_double_slash_redirect(features: Dict) -> RuleResult:
     if features.get('has_double_slash', 0) == 1:
         return (True, 15, "လမ်းကြောင်းထဲတွင် '//' ပါဝင်သဖြင့် redirect လုပ်နိုင်ခြေရှိသည်။")
     return (False, 0, "")
 
+
 def _rule_https_in_path(features: Dict) -> RuleResult:
     if features.get('has_https_in_path', 0) == 1:
         return (True, 15, "လမ်းကြောင်းထဲတွင် 'https' ပါဝင်သဖြင့် လှည့်စားရန် ကြိုးပမ်းမှုဖြစ်နိုင်သည်။")
     return (False, 0, "")
+
 
 def _rule_domain_hyphens(features: Dict) -> RuleResult:
     count = features.get('domain_hyphen_count', 0)
@@ -228,16 +261,19 @@ def _rule_domain_hyphens(features: Dict) -> RuleResult:
         return (True, 15, f"Domain တွင် hyphens {count} ခုပါဝင်သဖြင့် brand အတုခိုးရန် ကြိုးစားမှုဖြစ်နိုင်သည်။")
     return (False, 0, "")
 
+
 def _rule_shortener(features: Dict) -> RuleResult:
     if features.get('is_shortener', 0) == 1:
         return (True, 15, "URL shortener ဝန်ဆောင်မှုကို သုံးထားသဖြင့် နောက်ကွယ်ရှိ လိပ်စာကို ဖုံးကွယ်ထားသည်။")
     return (False, 0, "")
+
 
 def _rule_long_url(features: Dict) -> RuleResult:
     length = features.get('url_length', 0)
     if length > 100:
         return (True, 10, f"URL အရှည် {length} လုံး ရှိသဖြင့် သံသယဖြစ်ဖွယ်ရှိသည်။")
     return (False, 0, "")
+
 
 def _rule_brand_impersonation(features: Dict) -> RuleResult:
     brands_str = features.get('brands_detected', 'none')
@@ -253,12 +289,33 @@ def _rule_brand_impersonation(features: Dict) -> RuleResult:
         return (True, 70, f"ဤ URL သည် {', '.join(suspicious_brands)} ၏ အမှတ်တံဆိပ်ကို အတုခိုးထားသည် — တရားဝင် မဟုတ်နိုင်ပါ။")
     return (False, 0, "")
 
+
 def _rule_domain_numbers(features: Dict) -> RuleResult:
     digit_count = features.get('domain_digit_count', 0)
     if digit_count >= 4:
         return (True, 5, f"Domain တွင် နံပါတ်များ ပုံမှန်မဟုတ်ဘဲ များစွာပါဝင်သည် ({digit_count} လုံး)။")
     return (False, 0, "")
 
+
+def _rule_idn_homograph(features: Dict) -> RuleResult:
+    if features.get('has_idn', 0) == 1:
+        return (True, 25, "ဤ domain တွင် အခြားဘာသာစကားဖြင့် အတုခိုးထားသော အက္ခရာများ (IDN Homograph) ပါဝင်သည်။")
+    return (False, 0, "")
+
+
+def _rule_domain_age(features: Dict) -> RuleResult:
+    domain = features.get('domain', '')
+    if not domain:
+        return (False, 0, "")
+    age_days = get_domain_age_days(domain)
+    if age_days is not None and age_days < 30:
+        return (True, 20, f"Domain သက်တမ်း {age_days} ရက်သာရှိသေးသည် (အသစ်ဖြစ်နိုင်သည်)။")
+    return (False, 0, "")
+
+
+# -------------------------------------------------------------------
+# All rules – order can affect final score, but each rule is independent
+# -------------------------------------------------------------------
 ALL_RULES = [
     _rule_ip_address,
     _rule_suspicious_tld,
@@ -271,7 +328,10 @@ ALL_RULES = [
     _rule_long_url,
     _rule_brand_impersonation,
     _rule_domain_numbers,
+    _rule_idn_homograph,
+    _rule_domain_age,
 ]
+
 
 def run_rule_engine(features: Dict) -> List[Dict]:
     matched_rules = []
