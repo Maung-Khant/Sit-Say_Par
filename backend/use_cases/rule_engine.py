@@ -6,7 +6,7 @@ RuleResult = Tuple[bool, int, str]
 
 # Official domains for known brands (to avoid false positives)
 OFFICIAL_DOMAINS = {
-    # Banks & Financial
+    # Banks & Financial (ယခင်ရှိပြီးသား + အသစ်ထပ်ဖြည့်)
     'kbz': ['kbzbank.com'],
     'kbz bank': ['kbzbank.com'],
     'kbzbank': ['kbzbank.com'],
@@ -47,6 +47,40 @@ OFFICIAL_DOMAINS = {
     'wavemoney': ['wavemoney.com.mm'],
     'wave pay': ['wavemoney.com.mm'],
     'wavepay': ['wavemoney.com.mm'],
+    # နောက်ထပ် ဘဏ်များအတွက် official domain များ (အသစ်ထည့်ရန်)
+    'mab': ['mabbank.com'],                  # Myanma Apex Bank
+    'myanma apex bank': ['mabbank.com'],
+    'mob': ['mob.com.mm'],                   # Myanma Oriental Bank
+    'myanma oriental bank': ['mob.com.mm'],
+    'smidb': ['smidb.com'],                  # Small & Medium Industrial Development Bank
+    'small and medium industrial development bank': ['smidb.com'],
+    'yub': ['yub.com.mm'],                   # Yangon United Bank (if official)
+    'yangon united bank': ['yub.com.mm'],
+    'gtb': ['gtb.com.mm'],                   # Global Treasure Bank
+    'global treasure bank': ['gtb.com.mm'],
+    'shwe bank': ['shwebank.com'],           # Shwe Bank (if official)
+    'rural development bank': ['ruralbank.gov.mm'], # example, adjust
+    'advans myanmar': ['advans.com.mm'],     # Advans Myanmar
+    'proximity finance': ['proximityfinance.com.mm'],
+    'ok dollar': ['okdollar.com'],           # OK Dollar official
+    'okdollar': ['okdollar.com'],
+    'true money': ['truemoney.com.mm'],      # TrueMoney Myanmar
+    'truemoney': ['truemoney.com.mm'],
+    'global money': ['globalmoney.com.mm'],  # if exists
+    'citizens bank': ['citizensbank.com.mm'],
+    'myanmar citizens bank': ['citizensbank.com.mm'],
+    'mcb': ['mcb.com.mm'],
+    'first private bank': ['firstprivatebank.com.mm'],
+    'fpb': ['firstprivatebank.com.mm'],
+    'innwa bank': ['innwabank.com.mm'],
+    'myanma economic bank': ['meb.gov.mm'],
+    'meb': ['meb.gov.mm'],
+    'myanma foreign trade bank': ['mftb.gov.mm'],
+    'mftb': ['mftb.gov.mm'],
+    'myawaddy bank': ['myawaddybank.com'],
+    'mwd bank': ['myawaddybank.com'],
+    'mwdbank': ['myawaddybank.com'],
+
     # Telecom Operators
     'mpt': ['mpt.com.mm'],
     'myanmar posts and telecommunications': ['mpt.com.mm'],
@@ -57,6 +91,7 @@ OFFICIAL_DOMAINS = {
     'mytel': ['mytel.com.mm'],
     'atom': ['atom.com.mm'],
     'atom myanmar': ['atom.com.mm'],
+
     # International Tech
     'google': ['google.com'],
     'facebook': ['facebook.com'],
@@ -75,6 +110,9 @@ OFFICIAL_DOMAINS = {
     'telegram': ['telegram.org'],
     'zoom': ['zoom.us'],
     'paypal': ['paypal.com'],
+    'binance': ['binance.com'],
+    'octafx': ['octafx.com'],
+
     # E-commerce / others
     'lazada': ['lazada.com.mm'],
     'shopee': ['shopee.com.mm'],
@@ -82,10 +120,59 @@ OFFICIAL_DOMAINS = {
     'aliexpress': ['aliexpress.com'],
     'grab': ['grab.com'],
     'foodpanda': ['foodpanda.com.mm'],
+    'city mart': ['citymart.com.mm'],
+    'citymart': ['citymart.com.mm'],
+    'shop.com.mm': ['shop.com.mm'],
+
     # Delivery
     'dhl': ['dhl.com'],
     'fedex': ['fedex.com'],
     'ups': ['ups.com'],
+    'royal express': ['royalexpress.com.mm'],   # if official exists
+    'yangon door2door': ['yangondoor2door.com'],
+    'j&t express': ['jtexpress.com'],
+    'jt express': ['jtexpress.com'],
+
+    # Government Departments & Public Bodies (အစိုးရဌာနများ)
+    'ird': ['ird.gov.mm'],
+    'internal revenue department': ['ird.gov.mm'],
+    'dme': ['dme.gov.mm'],
+    'department of myanmar examinations': ['dme.gov.mm'],
+    'mrf': ['mrf.gov.mm'],                     # example, adjust
+    'myanmar immigration': ['mip.gov.mm'],      # Ministry of Immigration and Population
+    'immigration department': ['mip.gov.mm'],
+    'ycdc': ['ycdc.gov.mm'],
+    'yangon city development committee': ['ycdc.gov.mm'],
+    'myanmar police force': ['myanmarpolice.gov.mm'],
+    'myanmar police': ['myanmarpolice.gov.mm'],
+    'rtad': ['rtad.gov.mm'],
+    'road transport administration department': ['rtad.gov.mm'],
+    'moee': ['moee.gov.mm'],
+    'yangon electricity supply corporation': ['yesc.com.mm'],
+    'yesc': ['yesc.com.mm'],
+    'myanmar customs department': ['customs.gov.mm'],
+    'myanmar customs': ['customs.gov.mm'],
+    'department of labour': ['mol.gov.mm'],
+    'uec': ['uec.gov.mm'],
+    'union election commission': ['uec.gov.mm'],
+    'dica': ['dica.gov.mm'],
+    'directorate of investment and company administration': ['dica.gov.mm'],
+
+    # Other Notable Organizations
+    'kpmg': ['kpmg.com.mm'],
+    'quick loan': ['quickloan.com.mm'],   # if official
+    'quickloan': ['quickloan.com.mm'],
+    'air thanlwin': ['airthanlwin.com'],  # official?
+    'myanmar national airlines': ['flymna.com'],
+    'man airlines': ['flymna.com'],
+    'air kbz': ['airkbz.com'],
+    'fmi': ['fmi.com.mm'],
+    'first myanmar investment': ['fmi.com.mm'],
+    'capital diamond star group': ['cdsg.com.mm'],
+    'cdsg': ['cdsg.com.mm'],
+    'max myanmar': ['maxmyanmar.com'],
+    'shwe taung': ['shwetaung.com.mm'],
+    'yoma strategic holdings': ['yoma.com.mm'],   # yoma already covered
 }
 
 def _is_official_domain(domain: str, brand: str) -> bool:
