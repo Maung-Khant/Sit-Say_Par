@@ -2,41 +2,51 @@
 <html lang="my">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>စစ်ဆေးမှုမှတ်တမ်း - Sit-Say Par</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 2em auto; padding: 1em; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 0.5em; text-align: left; }
-        th { background: #f0f0f0; }
-        .score-low { color: green; }
-        .score-medium { color: orange; }
-        .score-high { color: red; }
-        .score-critical { color: darkred; }
-        .back-link { margin-top: 1em; display: block; }
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
     </style>
 </head>
-<body>
-    <h1>စစ်ဆေးမှုမှတ်တမ်း</h1>
-    {% if logs %}
-    <table>
-        <tr>
-            <th>ရက်စွဲ</th>
-            <th>URL</th>
-            <th>ရမှတ်</th>
-            <th>အဆင့်</th>
-        </tr>
-        {% for log in logs %}
-        <tr>
-            <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-            <td>{{ log.url[:50] }}{% if log.url|length > 50 %}...{% endif %}</td>
-            <td>{{ log.risk_score }}/100</td>
-            <td class="score-{{ log.risk_level.lower() }}">{{ log.risk_level }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% else %}
-        <p>မှတ်တမ်းမရှိသေးပါ။</p>
-    {% endif %}
-    <a href="/" class="back-link">← ပင်မစာမျက်နှာသို့</a>
+<body class="min-h-screen p-4">
+    <div class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">စစ်ဆေးမှုမှတ်တမ်း</h1>
+
+        {% if logs %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-600 text-sm uppercase">
+                        <th class="p-3">ရက်စွဲ</th>
+                        <th class="p-3">URL</th>
+                        <th class="p-3">ရမှတ်</th>
+                        <th class="p-3">အဆင့်</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for log in logs %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="p-3 text-sm text-gray-600">{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="p-3 text-sm text-gray-800 break-all">{{ log.url[:50] }}{% if log.url|length > 50 %}...{% endif %}</td>
+                        <td class="p-3 text-sm font-semibold text-gray-700">{{ log.risk_score }}/100</td>
+                        <td class="p-3 text-sm font-bold
+                            {% if log.risk_level == 'Low' %}text-green-600{% elif log.risk_level == 'Medium' %}text-orange-600{% elif log.risk_level == 'High' %}text-red-600{% else %}text-red-800{% endif %}
+                        ">{{ log.risk_level }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p class="text-gray-500 text-center py-8">မှတ်တမ်းမရှိသေးပါ။</p>
+        {% endif %}
+
+        <div class="mt-6 text-center">
+            <a href="/" class="text-blue-600 hover:underline text-sm">← ပင်မစာမျက်နှာသို့</a>
+        </div>
+    </div>
 </body>
 </html>
