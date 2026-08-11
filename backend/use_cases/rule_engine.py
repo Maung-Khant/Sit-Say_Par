@@ -8,18 +8,12 @@ import whois
 RuleResult = Tuple[bool, int, str]
 
 # -------------------------------------------------------------------
-# Official domains – prevents false positives on legitimate sites
+# Official domains – မှားယွင်းစွာ ဖမ်းမိခြင်းမှ ကာကွယ်ရန်
 # -------------------------------------------------------------------
 OFFICIAL_DOMAINS = {
-    # Banks & Financial
-    'kbz': ['kbzbank.com'],
-    'kbz bank': ['kbzbank.com'],
-    'kbzbank': ['kbzbank.com'],
-    'kanbawza': ['kbzbank.com'],
-    'kanbawza bank': ['kbzbank.com'],
-    'kbzpay': ['kbzbank.com'],
-    'kbz pay': ['kbzbank.com'],
-    'cb': ['cbbank.com.mm'],
+    
+
+   'cb': ['cbbank.com.mm'],
     'cb bank': ['cbbank.com.mm'],
     'cbbank': ['cbbank.com.mm'],
     'co-operative bank': ['cbbank.com.mm'],
@@ -92,6 +86,7 @@ OFFICIAL_DOMAINS = {
     'telenor myanmar': ['telenor.com.mm'],
     'ooredoo': ['ooredoo.com.mm'],
     'ooredoo myanmar': ['ooredoo.com.mm'],
+    'u9': ['u9.com.mm'],
     'mytel': ['mytel.com.mm'],
     'atom': ['atom.com.mm'],
     'atom myanmar': ['atom.com.mm'],
@@ -181,8 +176,14 @@ OFFICIAL_DOMAINS = {
 
 
 def _is_official_domain(domain: str, brand: str) -> bool:
+    """Check if domain is official for the given brand, stripping www if necessary."""
     official_list = OFFICIAL_DOMAINS.get(brand, [])
+    if not official_list:
+        return False
     domain_clean = domain.lower().rstrip('/')
+    # Remove leading www. for reliable matching
+    if domain_clean.startswith('www.'):
+        domain_clean = domain_clean[4:]
     for official in official_list:
         if domain_clean == official or domain_clean.endswith('.' + official):
             return True
@@ -193,7 +194,6 @@ def _is_official_domain(domain: str, brand: str) -> bool:
 # WHOIS helper
 # -------------------------------------------------------------------
 def get_domain_age_days(domain: str) -> int | None:
-    """Return domain age in days, or None if lookup fails."""
     try:
         w = whois.whois(domain)
         creation_date = w.creation_date
@@ -237,7 +237,7 @@ def _rule_suspicious_keywords(features: Dict) -> RuleResult:
 
 def _rule_at_symbol(features: Dict) -> RuleResult:
     if features.get('has_at_symbol', 0) == 1:
-        return (True, 20, "URL တွင် '@' သင်္ကေတ ပါဝင်သည် — ရှေ့ပိုင်းကို browser က လျစ်လျူရှုနိုင်သည်။")
+        return (True, 20, "URL တွင် '@' သင်္ကေတ ပါဝင်သည်။")
     return (False, 0, "")
 
 
@@ -264,7 +264,7 @@ def _rule_domain_hyphens(features: Dict) -> RuleResult:
 
 def _rule_shortener(features: Dict) -> RuleResult:
     if features.get('is_shortener', 0) == 1:
-        return (True, 15, "URL shortener ဝန်ဆောင်မှုကို သုံးထားသဖြင့် နောက်ကွယ်ရှိ လိပ်စာကို ဖုံးကွယ်ထားသည်။")
+        return (True, 15, "URL shortener ဝန်ဆောင်မှုကို သုံးထားသည်။")
     return (False, 0, "")
 
 
@@ -299,7 +299,7 @@ def _rule_domain_numbers(features: Dict) -> RuleResult:
 
 def _rule_idn_homograph(features: Dict) -> RuleResult:
     if features.get('has_idn', 0) == 1:
-        return (True, 25, "ဤ domain တွင် အခြားဘာသာစကားဖြင့် အတုခိုးထားသော အက္ခရာများ (IDN Homograph) ပါဝင်သည်။")
+        return (True, 25, "ဤ domain တွင် IDN Homograph တိုက်ခိုက်မှု ပါဝင်သည်။")
     return (False, 0, "")
 
 
@@ -313,9 +313,6 @@ def _rule_domain_age(features: Dict) -> RuleResult:
     return (False, 0, "")
 
 
-# -------------------------------------------------------------------
-# All rules – order can affect final score, but each rule is independent
-# -------------------------------------------------------------------
 ALL_RULES = [
     _rule_ip_address,
     _rule_suspicious_tld,
