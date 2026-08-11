@@ -8,32 +8,63 @@ import whois
 RuleResult = Tuple[bool, int, str]
 
 # -------------------------------------------------------------------
-# Official domains – မှားယွင်းစွာ ဖမ်းမိခြင်းမှ ကာကွယ်ရန်
+# Official domains – prevents false positives on legitimate sites
 # -------------------------------------------------------------------
 OFFICIAL_DOMAINS = {
-    
+    # KBZ Group
+    'kbz': ['kbzbank.com', 'kbzpay.com'],
+    'kbz bank': ['kbzbank.com'],
+    'kbzbank': ['kbzbank.com'],
+    'kanbawza': ['kbzbank.com'],
+    'kanbawza bank': ['kbzbank.com'],
+    'kbzpay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
+    'kbz pay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
+    'kpay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
+    'k pay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
+    'k+': ['kbzpay.com', 'kbzbank.com'],
+    'kplus': ['kbzpay.com', 'kbzbank.com'],
+    'k+wallet': ['kbzpay.com', 'kbzbank.com'],
 
-   'cb': ['cbbank.com.mm'],
+    # CB Bank
+    'cb': ['cbbank.com.mm'],
     'cb bank': ['cbbank.com.mm'],
     'cbbank': ['cbbank.com.mm'],
     'co-operative bank': ['cbbank.com.mm'],
     'cooperative bank': ['cbbank.com.mm'],
-    'yoma': ['yoma.com.mm'],
-    'yoma bank': ['yoma.com.mm'],
-    'yomabank': ['yoma.com.mm'],
+    'cb pay': ['cbbank.com.mm'],
+    'cbpay': ['cbbank.com.mm'],
+
+    # AYA Bank
     'aya': ['ayabank.com'],
     'aya bank': ['ayabank.com'],
     'ayabank': ['ayabank.com'],
     'ayeyarwady bank': ['ayeyarwadybank.com'],
+    'aya pay': ['ayabank.com'],
+    'ayapay': ['ayabank.com'],
+
+    # UAB Bank
     'uab': ['uab.com.mm'],
     'uab bank': ['uab.com.mm'],
     'uabbank': ['uab.com.mm'],
     'united amara bank': ['uab.com.mm'],
+    'uab pay': ['uab.com.mm'],
+    'uabpay': ['uab.com.mm'],
+
+    # A Bank (AGD)
     'a bank': ['abank.com.mm'],
     'abank': ['abank.com.mm'],
     'agd bank': ['agdbank.com'],
     'agd': ['agdbank.com'],
     'asia green development bank': ['agdbank.com'],
+
+    # Yoma Bank
+    'yoma': ['yoma.com.mm'],
+    'yoma bank': ['yoma.com.mm'],
+    'yomabank': ['yoma.com.mm'],
+    'yoma pay': ['yoma.com.mm'],
+    'yomapay': ['yoma.com.mm'],
+
+    # Other Banks
     'mtb': ['mtb.com.mm'],
     'mtb bank': ['mtb.com.mm'],
     'myanma tourism bank': ['mtb.com.mm'],
@@ -41,43 +72,13 @@ OFFICIAL_DOMAINS = {
     'sathapana bank': ['sathapanabank.com'],
     'cbm': ['cbm.gov.mm'],
     'central bank of myanmar': ['cbm.gov.mm'],
+
+    # Wave Money
     'wave': ['wavemoney.com.mm'],
     'wave money': ['wavemoney.com.mm'],
     'wavemoney': ['wavemoney.com.mm'],
     'wave pay': ['wavemoney.com.mm'],
     'wavepay': ['wavemoney.com.mm'],
-    'mab': ['mabbank.com'],
-    'myanma apex bank': ['mabbank.com'],
-    'mob': ['mob.com.mm'],
-    'myanma oriental bank': ['mob.com.mm'],
-    'smidb': ['smidb.com'],
-    'small and medium industrial development bank': ['smidb.com'],
-    'yub': ['yub.com.mm'],
-    'yangon united bank': ['yub.com.mm'],
-    'gtb': ['gtb.com.mm'],
-    'global treasure bank': ['gtb.com.mm'],
-    'shwe bank': ['shwebank.com'],
-    'rural development bank': ['ruralbank.gov.mm'],
-    'advans myanmar': ['advans.com.mm'],
-    'proximity finance': ['proximityfinance.com.mm'],
-    'ok dollar': ['okdollar.com'],
-    'okdollar': ['okdollar.com'],
-    'true money': ['truemoney.com.mm'],
-    'truemoney': ['truemoney.com.mm'],
-    'global money': ['globalmoney.com.mm'],
-    'citizens bank': ['citizensbank.com.mm'],
-    'myanmar citizens bank': ['citizensbank.com.mm'],
-    'mcb': ['mcb.com.mm'],
-    'first private bank': ['firstprivatebank.com.mm'],
-    'fpb': ['firstprivatebank.com.mm'],
-    'innwa bank': ['innwabank.com.mm'],
-    'myanma economic bank': ['meb.gov.mm'],
-    'meb': ['meb.gov.mm'],
-    'myanma foreign trade bank': ['mftb.gov.mm'],
-    'mftb': ['mftb.gov.mm'],
-    'myawaddy bank': ['myawaddybank.com'],
-    'mwd bank': ['myawaddybank.com'],
-    'mwdbank': ['myawaddybank.com'],
 
     # Telecom Operators
     'mpt': ['mpt.com.mm'],
@@ -86,7 +87,6 @@ OFFICIAL_DOMAINS = {
     'telenor myanmar': ['telenor.com.mm'],
     'ooredoo': ['ooredoo.com.mm'],
     'ooredoo myanmar': ['ooredoo.com.mm'],
-    'u9': ['u9.com.mm'],
     'mytel': ['mytel.com.mm'],
     'atom': ['atom.com.mm'],
     'atom myanmar': ['atom.com.mm'],
