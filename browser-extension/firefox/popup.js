@@ -1,8 +1,11 @@
+// popup.js
 document.getElementById('scanBtn').addEventListener('click', async () => {
   const url = document.getElementById('urlInput').value.trim();
   if (!url) return;
+
   const resultDiv = document.getElementById('result');
-  resultDiv.innerHTML = "Scanning...";
+  resultDiv.textContent = "Scanning...";  // Safe text assignment
+
   try {
     const response = await fetch("https://sit-say-par.onrender.com/analyze", {
       method: "POST",
@@ -10,11 +13,26 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
       body: JSON.stringify({ url: url })
     });
     const data = await response.json();
-    resultDiv.innerHTML = `
-      <strong>Risk:</strong> <span class="${data.risk_level.toLowerCase()}">${data.risk_level}</span> (${data.risk_score}/100)<br>
-      <small>${data.explanation.split('\n').slice(0,3).join('<br>')}</small>
-    `;
+
+    // Clear previous content
+    resultDiv.innerHTML = "";
+
+    // Create risk level element
+    const riskSpan = document.createElement('span');
+    riskSpan.className = `score level-${data.risk_level.toLowerCase()}`;
+    riskSpan.textContent = `${data.risk_level} (${data.risk_score}/100)`;
+
+    // Create explanation paragraph
+    const explanationP = document.createElement('p');
+    explanationP.textContent = data.explanation.split('\n').slice(0,3).join(' ');
+
+    // Append to result
+    resultDiv.appendChild(document.createTextNode("Risk: "));
+    resultDiv.appendChild(riskSpan);
+    resultDiv.appendChild(document.createElement('br'));
+    resultDiv.appendChild(explanationP);
+
   } catch (error) {
-    resultDiv.innerHTML = "Error: " + error.message;
+    resultDiv.textContent = "Error: " + error.message;
   }
 });

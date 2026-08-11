@@ -3,7 +3,12 @@
   "name": "Sit-Say Par",
   "version": "1.0",
   "description": "Explainable Myanmar Phishing URL Risk Assessment",
-  "permissions": ["activeTab", "contextMenus", "notifications", "https://sit-say-par.onrender.com/*"],
+  "permissions": [
+    "activeTab",
+    "contextMenus",
+    "notifications",
+    "https://sit-say-par.onrender.com/*"
+  ],
   "browser_action": {
     "default_popup": "popup.html",
     "default_title": "Sit-Say Par"
@@ -15,5 +20,14 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "sit-say-par@example.com",
+      "data_collection_permissions": {
+        "required": ["URL analysis data"],
+        "optional": []
+      }
+    }
   }
 }
