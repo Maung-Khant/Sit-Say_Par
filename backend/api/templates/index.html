@@ -6,7 +6,6 @@
     <title>Sit-Say Par - URL အန္တရာယ်စစ်ဆေးခြင်း</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom gradient background */
         body {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
@@ -16,14 +15,18 @@
     <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl p-8">
         <div class="text-center mb-6">
             <h1 class="text-3xl font-bold text-gray-800">Sit-Say Par</h1>
-<p class="text-gray-500 mt-2">
-    သံသယဖြစ်စရာ link များကို မနှိပ်ခင် အန္တရာယ်ရှိမရှိ စစ်ဆေးပါ။ စာသားနှင့် link ရောနေလည်း စိတ်မပူပါနှင့် — စနစ်က အလိုအလျောက် ရှာဖွေပေးပါမည်။
-</p>
+            <p class="text-gray-500 mt-2">
+                သံသယဖြစ်စရာ link များကို မနှိပ်ခင် အန္တရာယ်ရှိမရှိ စစ်ဆေးပါ။ စာသားနှင့် link ရောနေလည်း စိတ်မပူပါနှင့် — စနစ်က အလိုအလျောက် ရှာဖွေပေးပါမည်။
+            </p>
         </div>
 
         <form action="/analyze-web" method="post" class="space-y-4">
-            <input type="text" name="url" placeholder="link (http:// သို့ https:// သို့ စာသားတစ်ခုလုံး)ကို paste လုပ်ပါ required
-       class="w-full px-4 py-4 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+            <!-- input box ကို ပိုမိုကြီးမားစေရန် py-5 (vertical padding) နှင့် text-lg (font size) ထည့်ထားသည် -->
+            <input type="text" name="url" 
+                   placeholder="link (http:// သို့ https:// သို့ စာသားတစ်ခုလုံး)ကို ဒီမှာ paste လုပ်ပါ" 
+                   required
+                   class="w-full px-4 py-5 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+            
             <button type="submit"
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200">
                 စစ်ဆေးမည်
