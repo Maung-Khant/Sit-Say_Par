@@ -12,7 +12,8 @@
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl p-8">
+    <!-- max-w-2xl ဖြင့် container ကို 672px ထိ ကျယ်စေပါသည် -->
+    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8">
         <div class="text-center mb-6">
             <h1 class="text-3xl font-bold text-gray-800">Sit-Say Par</h1>
             <p class="text-gray-500 mt-2">
@@ -21,12 +22,11 @@
         </div>
 
         <form action="/analyze-web" method="post" class="space-y-4">
-            <!-- input box ကို ပိုမိုကြီးမားစေရန် py-5 (vertical padding) နှင့် text-lg (font size) ထည့်ထားသည် -->
-            <input type="text" name="url" 
-                   placeholder="link (http:// သို့ https:// သို့ စာသားတစ်ခုလုံး)ကို ဒီမှာ paste လုပ်ပါ" 
+            <!-- py-6, text-xl ဖြင့် input box ကို ပိုကြီးစေပြီး placeholder အပြည့်ပေါ်စေရန် -->
+            <input type="text" name="url"
+                   placeholder="link (http:// သို့ https:// သို့ စာသားတစ်ခုလုံး)ကို ဒီမှာ paste လုပ်ပါ"
                    required
-                   class="w-full px-4 py-5 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-            
+                   class="w-full px-5 py-6 text-xl border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
             <button type="submit"
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200">
                 စစ်ဆေးမည်
