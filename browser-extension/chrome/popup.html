@@ -4,17 +4,26 @@
   <meta charset="UTF-8">
   <title>Sit-Say Par</title>
   <style>
-    body { width: 300px; padding: 10px; font-family: sans-serif; }
-    input { width: 100%; padding: 5px; }
-    button { margin-top: 5px; padding: 5px 10px; background: #2c3e50; color: white; border: none; cursor: pointer; }
-    #result { margin-top: 10px; font-size: 0.9em; }
-    .low { color: green; } .medium { color: orange; } .high { color: red; } .critical { color: darkred; }
+    body { width: 350px; padding: 15px; font-family: sans-serif; }
+    input { width: 100%; padding: 8px; font-size: 14px; }
+    button { margin-top: 8px; padding: 8px 16px; background: #2c3e50; color: white; border: none; cursor: pointer; border-radius: 4px; }
+    #result { margin-top: 12px; font-size: 14px; max-height: 400px; overflow-y: auto; }
+    .risk-level { font-weight: bold; }
+    .risk-Low { color: green; }
+    .risk-Medium { color: orange; }
+    .risk-High { color: red; }
+    .risk-Critical { color: darkred; }
+    .confidence { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 13px; margin-left: 8px; }
+    .confidence-High { background: #d4edda; color: #155724; }
+    .confidence-Medium { background: #fff3cd; color: #856404; }
+    .confidence-Low { background: #f8d7da; color: #721c24; }
+    .explanation { background: #f9f9f9; padding: 8px; border-radius: 4px; margin-top: 8px; white-space: pre-wrap; font-size: 13px; line-height: 1.5; }
   </style>
 </head>
 <body>
-  <h3>Sit-Say Par</h3>
-  <input type="text" id="urlInput" placeholder="Enter URL or text">
-  <button id="scanBtn">Scan</button>
+  <h3 style="margin-top:0;">Sit-Say Par</h3>
+  <input type="text" id="urlInput" placeholder="URL သို့မဟုတ် စာသားထည့်ပါ">
+  <button id="scanBtn">စစ်ဆေးမည်</button>
   <div id="result"></div>
   <script src="popup.js"></script>
 </body>

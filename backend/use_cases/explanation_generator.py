@@ -1,8 +1,11 @@
 # backend/use_cases/explanation_generator.py
 from typing import Dict
 
-def get_confidence_level(risk_assessment: Dict) -> str:
-    """Determine confidence level based on ML probability and rule triggers."""
+def get_detection_confidence(risk_assessment: Dict) -> str:
+    """
+    Determine system detection confidence based on ML probability and rule triggers.
+    Returns 'High', 'Medium', or 'Low'.
+    """
     ml_score = risk_assessment.get('ml_score')
     rule_count = risk_assessment.get('total_rules_triggered', 0)
 
@@ -14,7 +17,7 @@ def get_confidence_level(risk_assessment: Dict) -> str:
         else:
             return "Low"
     else:
-        # No ML model – use rule count only
+        # No ML model – rely on rule count
         if rule_count >= 3:
             return "High"
         elif rule_count >= 2:
@@ -22,12 +25,13 @@ def get_confidence_level(risk_assessment: Dict) -> str:
         else:
             return "Low"
 
+
 def generate_burmese_explanation(risk_assessment: Dict) -> str:
     score = risk_assessment['risk_score']
     level = risk_assessment['risk_level']
     rules = risk_assessment.get('matched_rules', [])
     ml_score = risk_assessment.get('ml_score')
-    confidence = get_confidence_level(risk_assessment)
+    confidence = get_detection_confidence(risk_assessment)
 
     level_map = {
         "Low": "နည်းပါးသည်",
@@ -37,11 +41,11 @@ def generate_burmese_explanation(risk_assessment: Dict) -> str:
     }
     burmese_level = level_map.get(level, level)
 
-    explanation = f"ဤ URL ၏ အန္တရာယ်ရှိမှု အဆင့်မှာ **{burmese_level}** (ရမှတ် {score}/100) ဖြစ်သည်။\n"
+    explanation = f"ဤ URL ၏ အန္တရာယ်ရှိမှု အဆင့်မှာ **{burmese_level}** (ရမှတ် {score}/100) ဖြစ်သည်။\n\n"
 
-    # Confidence indicator
+    # System detection confidence (not "trustworthiness")
     confidence_map = {"High": "မြင့်မား", "Medium": "အလယ်အလတ်", "Low": "နည်းပါး"}
-    explanation += f"ယုံကြည်စိတ်ချရမှု အဆင့်: **{confidence_map[confidence]}**\n\n"
+    explanation += f"**စနစ်၏ စစ်ဆေးမှု သေချာမှု အဆင့်:** {confidence_map[confidence]}\n"
 
     if ml_score is not None:
         explanation += f"(ML ခန့်မှန်းချက် - {ml_score}/100)\n\n"
