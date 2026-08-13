@@ -22,13 +22,11 @@
     <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8">
         <h1 class="text-3xl font-bold text-gray-800 mb-6">စစ်ဆေးမှုရလဒ်</h1>
 
-        <!-- URL display -->
         <div class="mb-4">
             <span class="text-sm text-gray-500">URL:</span>
             <p class="text-lg font-medium text-gray-700 break-all">{{ url }}</p>
         </div>
 
-        <!-- Risk level badge and gauge -->
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
             <div class="flex-1 space-y-3">
                 <div>
@@ -45,7 +43,6 @@
                 </div>
             </div>
 
-            <!-- Circular gauge (SVG) -->
             <div class="flex-shrink-0 relative w-32 h-32 mx-auto md:mx-0">
                 <svg class="w-full h-full" viewBox="0 0 36 36">
                     <path d="M18 2.0845
@@ -67,13 +64,11 @@
             </div>
         </div>
 
-        <!-- Explanation card -->
         <div class="bg-gray-50 rounded-lg p-4 mb-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-2">အကြောင်းပြချက်</h2>
             <pre class="whitespace-pre-wrap text-sm text-gray-600 font-sans">{{ explanation }}</pre>
         </div>
 
-        <!-- Back link -->
         <div class="text-center">
             <a href="/" class="text-blue-600 hover:underline text-sm">
                 ← နောက်ထပ် URL တစ်ခုစစ်ဆေးရန်

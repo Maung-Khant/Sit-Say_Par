@@ -37,7 +37,7 @@ def render_template(template_name: str, context: dict) -> HTMLResponse:
     template = template_env.get_template(template_name)
     return HTMLResponse(content=template.render(context))
 
-# --- Request/Response Schemas ---
+# --- Schemas ---
 class AnalyzeRequest(BaseModel):
     url: HttpUrl
 
@@ -61,7 +61,6 @@ def analyze_url(request: Request, analyze_req: AnalyzeRequest, db: Session = Dep
         use_case = AnalyzeURLUseCase()
         result = use_case.execute(str(analyze_req.url))
 
-        # Add detection confidence
         result["detection_confidence"] = get_detection_confidence(result)
 
         log = AnalysisLog(
@@ -89,7 +88,6 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
         use_case = AnalyzeURLUseCase()
         result = use_case.execute(url)
 
-        # Save to database
         log = AnalysisLog(
             url=result["url"],
             risk_score=result["risk_score"],
@@ -100,7 +98,6 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
         db.add(log)
         db.commit()
 
-        # Get detection confidence
         confidence = get_detection_confidence(result)
 
         return render_template("result.html", {
@@ -123,7 +120,7 @@ async def history(request: Request, db: Session = Depends(get_db)):
     logs = db.query(AnalysisLog).order_by(AnalysisLog.created_at.desc()).limit(20).all()
     return render_template("history.html", {"request": request, "logs": logs})
 
-# ===================== Telegram Bot Integration =====================
+# ===================== Telegram Bot =====================
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 bot_app = None
 
@@ -141,7 +138,6 @@ async def bot_handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE)
         use_case = AnalyzeURLUseCase()
         result = use_case.execute(user_text)
 
-        # Use the new detection confidence function
         confidence = get_detection_confidence(result)
         confidence_map = {"High": "မြင့်မား", "Medium": "အလယ်အလတ်", "Low": "နည်းပါး"}
 

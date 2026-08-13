@@ -1,24 +1,40 @@
 # backend/use_cases/explanation_generator.py
 from typing import Dict
 
+# Strong rules that indicate high confidence when triggered
+STRONG_RULE_NAMES = {
+    '_rule_brand_impersonation',
+    '_rule_ip_address',
+    '_rule_suspicious_tld',
+    '_rule_idn_homograph',
+    '_rule_domain_age',
+}
+
 def get_detection_confidence(risk_assessment: Dict) -> str:
     """
-    Determine system detection confidence based on ML probability and rule triggers.
-    Returns 'High', 'Medium', or 'Low'.
+    Determine system detection confidence based on evidence strength.
+    High   = strong evidence (brand impersonation, IP, IDN, etc.)
+    Medium = moderate evidence (multiple weaker rules)
+    Low    = weak evidence (few generic features)
     """
     ml_score = risk_assessment.get('ml_score')
     rule_count = risk_assessment.get('total_rules_triggered', 0)
+    matched_rules = risk_assessment.get('matched_rules', [])
+
+    # Check if any strong rule is triggered
+    has_strong_rule = any(rule['rule_name'] in STRONG_RULE_NAMES for rule in matched_rules)
 
     if ml_score is not None:
-        if ml_score >= 90 and rule_count >= 3:
+        # Combine ML confidence with rule strength
+        if ml_score >= 90 or (ml_score >= 70 and has_strong_rule):
             return "High"
-        elif ml_score >= 70 or rule_count >= 2:
+        elif ml_score >= 70 or has_strong_rule or rule_count >= 2:
             return "Medium"
         else:
             return "Low"
     else:
-        # No ML model – rely on rule count
-        if rule_count >= 3:
+        # No ML model – rely on rule strength
+        if has_strong_rule or rule_count >= 3:
             return "High"
         elif rule_count >= 2:
             return "Medium"
@@ -43,7 +59,6 @@ def generate_burmese_explanation(risk_assessment: Dict) -> str:
 
     explanation = f"ဤ URL ၏ အန္တရာယ်ရှိမှု အဆင့်မှာ **{burmese_level}** (ရမှတ် {score}/100) ဖြစ်သည်။\n\n"
 
-    # System detection confidence (not "trustworthiness")
     confidence_map = {"High": "မြင့်မား", "Medium": "အလယ်အလတ်", "Low": "နည်းပါး"}
     explanation += f"**စနစ်၏ စစ်ဆေးမှု သေချာမှု အဆင့်:** {confidence_map[confidence]}\n"
 

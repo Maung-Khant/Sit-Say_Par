@@ -101,7 +101,14 @@ MYANMAR_BRANDS = [
     "binance", "octafx",
 ]
 
+# Leetspeak mapping for homoglyph/typosquatting detection
+LEETSPEAK_MAP = str.maketrans({
+    '0': 'o', '1': 'l', '3': 'e', '4': 'a', '5': 's', '7': 't', '8': 'b', '9': 'g', '@': 'a'
+})
 
+def normalize_leet(text: str) -> str:
+    """Convert common leetspeak digits to letters and lowercase."""
+    return text.translate(LEETSPEAK_MAP).lower()
 def extract_features(url: URL) -> dict:
     raw = url.raw.lower()
     domain = url.domain
