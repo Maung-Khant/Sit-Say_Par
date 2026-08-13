@@ -12,34 +12,41 @@ STRONG_RULE_NAMES = {
 
 def get_detection_confidence(risk_assessment: Dict) -> str:
     """
-    Determine system detection confidence based on evidence strength.
-    High   = strong evidence (brand impersonation, IP, IDN, etc.)
-    Medium = moderate evidence (multiple weaker rules)
-    Low    = weak evidence (few generic features)
+    Return confidence of the system's assessment.
+    High   = clear evidence (either definitely safe or definitely phishing)
+    Medium = moderate evidence, some uncertainty
+    Low    = ambiguous or insufficient evidence
     """
     ml_score = risk_assessment.get('ml_score')
     rule_count = risk_assessment.get('total_rules_triggered', 0)
     matched_rules = risk_assessment.get('matched_rules', [])
+    risk_score = risk_assessment.get('risk_score', 0)
 
-    # Check if any strong rule is triggered
+    # Check if any strong phishing rule triggered
     has_strong_rule = any(rule['rule_name'] in STRONG_RULE_NAMES for rule in matched_rules)
 
-    if ml_score is not None:
-        # Combine ML confidence with rule strength
-        if ml_score >= 90 or (ml_score >= 70 and has_strong_rule):
+    # Case 1: Very low risk (likely legitimate)
+    if risk_score <= 10:
+        # If no rules triggered -> high confidence safe
+        if rule_count == 0:
             return "High"
-        elif ml_score >= 70 or has_strong_rule or rule_count >= 2:
-            return "Medium"
+        # If only weak rules, still medium
         else:
-            return "Low"
+            return "Medium"
+
+    # Case 2: High risk (likely phishing)
+    if risk_score >= 70:
+        # If strong rule triggered or ML high -> high confidence
+        if has_strong_rule or (ml_score is not None and ml_score >= 70):
+            return "High"
+        else:
+            return "Medium"
+
+    # Case 3: Moderate risk (uncertain)
+    if has_strong_rule or (ml_score is not None and ml_score >= 70):
+        return "Medium"
     else:
-        # No ML model – rely on rule strength
-        if has_strong_rule or rule_count >= 3:
-            return "High"
-        elif rule_count >= 2:
-            return "Medium"
-        else:
-            return "Low"
+        return "Low"
 
 
 def generate_burmese_explanation(risk_assessment: Dict) -> str:
