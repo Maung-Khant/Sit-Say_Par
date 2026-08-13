@@ -1,7 +1,7 @@
 # backend/use_cases/explanation_generator.py
 from typing import Dict
 
-# Strong rules that indicate high confidence when triggered
+# Strong rules that indicate phishing
 STRONG_RULE_NAMES = {
     '_rule_brand_impersonation',
     '_rule_ip_address',
@@ -27,16 +27,13 @@ def get_detection_confidence(risk_assessment: Dict) -> str:
 
     # Case 1: Very low risk (likely legitimate)
     if risk_score <= 10:
-        # If no rules triggered -> high confidence safe
         if rule_count == 0:
-            return "High"
-        # If only weak rules, still medium
+            return "High"   # No suspicious indicators -> system is highly confident it's safe
         else:
             return "Medium"
 
     # Case 2: High risk (likely phishing)
     if risk_score >= 70:
-        # If strong rule triggered or ML high -> high confidence
         if has_strong_rule or (ml_score is not None and ml_score >= 70):
             return "High"
         else:
