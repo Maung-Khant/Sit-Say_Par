@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Dict, List, Tuple
 
 import whois
+import threading
 
 RuleResult = Tuple[bool, int, str]
 
@@ -194,16 +195,24 @@ def _is_official_domain(domain: str, brand: str) -> bool:
 # WHOIS helper
 # -------------------------------------------------------------------
 def get_domain_age_days(domain: str) -> int | None:
-    try:
-        w = whois.whois(domain)
-        creation_date = w.creation_date
-        if isinstance(creation_date, list):
-            creation_date = creation_date[0]
-        if creation_date:
-            return (datetime.now() - creation_date).days
-    except Exception:
-        pass
-    return None
+    """Return domain age in days with a timeout, or None if lookup fails."""
+    result = [None]
+
+    def _lookup():
+        try:
+            w = whois.whois(domain)
+            creation_date = w.creation_date
+            if isinstance(creation_date, list):
+                creation_date = creation_date[0]
+            if creation_date:
+                result[0] = (datetime.now() - creation_date).days
+        except Exception:
+            pass
+
+    thread = threading.Thread(target=_lookup)
+    thread.start()
+    thread.join(timeout=3)  # 3 seconds maximum
+    return result[0]
 
 
 # -------------------------------------------------------------------
