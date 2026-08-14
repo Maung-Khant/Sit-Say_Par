@@ -76,6 +76,10 @@ OFFICIAL_DOMAINS = {
     'central bank of myanmar': ['cbm.gov.mm'],
     'mcb': ['mcb.com.mm'],
     'myanmar citizens bank': ['mcb.com.mm'],
+    'mftb': ['mftb.gov.mm'],
+    'myanma foreign trade bank': ['mftb.gov.mm'],
+    'meb': ['meb.gov.mm'],
+    'myanma economic bank': ['meb.gov.mm'],
 
     # Wave Money
     'wave': ['wavemoney.com.mm'],
@@ -229,7 +233,7 @@ def get_domain_age_days(domain: str) -> int | None:
 
     thread = threading.Thread(target=_lookup)
     thread.start()
-    thread.join(timeout=3)  # 3 seconds maximum
+    thread.join(timeout=3)
     return result[0]
 
 # -------------------------------------------------------------------
@@ -254,20 +258,17 @@ def _rule_suspicious_keywords(features: Dict) -> RuleResult:
     count = features.get('suspicious_keyword_count', 0)
     if count == 0:
         return (False, 0, "")
-    
-    # If domain is official for any detected brand, reduce impact of benign keywords
+
     brands_str = features.get('brands_detected', 'none')
     domain = features.get('domain', '')
     if brands_str != 'none':
         brand_list = [b.strip() for b in brands_str.split(',')]
         if is_any_official_domain(domain, brand_list):
-            # Official domain: only alert if many suspicious keywords (very unlikely for legit)
             if count >= 3:
                 return (True, 20, f"သံသယဖြစ်ဖွယ် စာလုံးရေ {count} လုံး ပါဝင်သည်။")
             else:
                 return (False, 0, "")
-    
-    # Normal path for non-official domains
+
     if count >= 3:
         return (True, 35, f"သံသယဖြစ်ဖွယ် စာလုံးရေ {count} လုံး (login, verify, bonus, free စသည်) ပါဝင်သည်။")
     elif count >= 1:
@@ -315,7 +316,6 @@ def _rule_brand_impersonation(features: Dict) -> RuleResult:
     domain = features.get('domain', '')
 
     # If the domain is official for any brand, skip this rule entirely.
-    # This prevents short brand substrings (e.g., "cb" in "mcb.com.mm") from causing false positives.
     if is_domain_official_for_any(domain):
         return (False, 0, "")
 

@@ -4,7 +4,7 @@ import difflib
 from pathlib import Path
 from backend.core.url import URL
 
-# Suspicious keywords (English + Myanmar relevant)
+# Suspicious keywords (English + Myanmar)
 SUSPICIOUS_KEYWORDS = [
     'login', 'signin', 'verify', 'verification', 'secure', 'account',
     'update', 'upgrade', 'confirm', 'banking', 'password', 'credential',
@@ -13,7 +13,6 @@ SUSPICIOUS_KEYWORDS = [
     'security', 'auth', 'authenticate', 'unlock', 'reactivate',
     'support', 'compliance', 'token', 'sync', 'mfa', 'authorization',
     'override', 'settlement', 'agent', 'portal', 'recover', 'restore',
-    # Myanmar scam keywords
     'ဆုကြေး', 'ငွေထုတ်', 'အကောင့်အဆင့်မြှင့်', 'အတည်ပြုရန်',
     'ပိတ်သိမ်းမည်', 'ချက်ချင်း', 'အရေးပေါ်', 'လက်ဆောင်',
     'အကောင့်ဝင်', 'စကားဝှက်', 'ဘဏ်', 'ငွေလွှဲ',
@@ -27,11 +26,12 @@ SUSPICIOUS_KEYWORDS = [
 SUSPICIOUS_TLDS = ['.tk', '.ml', '.ga', '.cf', '.xyz', '.top', '.club',
                    '.info', '.website', '.online', '.test', '.help']
 
-# Comprehensive Myanmar brand list (lowercase)
+# Comprehensive Myanmar brand list (lowercase) - includes banks, telcos, etc.
 MYANMAR_BRANDS = [
     # Banks & Financial / Mobile-Money
     "kbz", "kbz bank", "kbzbank", "kanbawza", "kanbawza bank",
-    "kbzpay", "kbz pay", "kpay", "k pay", "kplus",
+    "kbzpay", "kbz pay", "kpay", "k pay", "k+", "kplus", "k+wallet",
+    "kbzlife",
     "cb", "cb bank", "cbbank", "co-operative bank", "cooperative bank",
     "cb pay", "cbpay",
     "yoma", "yoma bank", "yomabank", "yoma pay", "yomapay",
@@ -56,6 +56,21 @@ MYANMAR_BRANDS = [
     "global treasure bank", "gtb",
     "shwe bank", "rural development bank",
     "advans myanmar", "advans", "proximity finance",
+    # State-Owned Banks
+    "myanma investment and commercial bank", "micb",
+    "myanma agriculture and development bank", "madb",
+    # Additional Private Banks
+    "yadanabon bank",
+    "yangon city bank",
+    "tun commercial bank", "tcb",
+    "small & medium enterprises development bank", "smedb",
+    "nay pyi taw development bank", "npdb",
+    "myanmar metro bank", "mmb",
+    "construction housing and infrastructure development bank", "chidb",
+    "ayeyarwaddy farmers development bank", "a bank", "abank",
+    "glory farmer development bank", "g bank",
+    "mineral development bank", "mdb",
+    "farmers development bank mandalay", "fdb",
 
     # Telecom Operators
     "mpt", "myanmar posts and telecommunications",
@@ -64,6 +79,10 @@ MYANMAR_BRANDS = [
     "mytel",
     "kddi",
     "atom", "atom myanmar",
+    # Mobile Financial Services
+    "m-pitesan", "mpitesan",
+    "mytelpay", "mytel pay",
+    "mpt pay", "mptpay",
 
     # Online Shopping Platforms
     "lazada", "shopee", "ubuy",
@@ -122,35 +141,6 @@ def normalize_leet(text: str) -> str:
     """Convert common leetspeak digits to letters and lowercase."""
     return text.translate(LEETSPEAK_MAP).lower()
 
-def find_lookalike_brands(domain: str) -> list:
-    """
-    Detect brand names that are similar to part of the domain (typosquatting).
-    Uses difflib to compute similarity ratio.
-    """
-    lookalikes = []
-    # Remove leading www. and lower
-    domain_clean = domain.lower()
-    if domain_clean.startswith('www.'):
-        domain_clean = domain_clean[4:]
-
-    # Split domain into parts by dot
-    parts = domain_clean.split('.')
-
-    for brand in MYANMAR_BRANDS:
-        brand_norm = brand.replace(' ', '')
-        for part in parts:
-            # Skip very short parts (avoid false positives like 'k')
-            if len(part) < 3:
-                continue
-            # Compute similarity ratio (0 to 1)
-            ratio = difflib.SequenceMatcher(None, part, brand_norm).ratio()
-            # Trigger if very similar (>= 0.85) or identical length and edit distance small
-            if ratio >= 0.85 or (abs(len(part) - len(brand_norm)) <= 1 and ratio >= 0.80):
-                lookalikes.append(brand)
-                break  # one brand matched enough
-
-    return lookalikes
-
 # URL shortener domains (exact or subdomain)
 SHORTENER_DOMAINS = [
     'bit.ly', 'tinyurl.com', 'goo.gl', 'ow.ly', 't.co',
@@ -159,7 +149,7 @@ SHORTENER_DOMAINS = [
 ]
 
 def is_shortener_domain(domain: str) -> bool:
-    """Check if domain is a URL shortener (exact match or subdomain)."""
+    """Check if domain is a URL shortener."""
     domain_clean = domain.lower()
     if domain_clean.startswith('www.'):
         domain_clean = domain_clean[4:]
@@ -168,6 +158,43 @@ def is_shortener_domain(domain: str) -> bool:
             return True
     return False
 
+# Blacklist loading
+_BLACKLIST_CACHE = None
+
+def load_blacklist() -> set:
+    global _BLACKLIST_CACHE
+    if _BLACKLIST_CACHE is None:
+        blacklist_file = Path(__file__).resolve().parent.parent / "infrastructure" / "phishing_blacklist.txt"
+        if blacklist_file.exists():
+            with open(blacklist_file, 'r') as f:
+                _BLACKLIST_CACHE = {line.strip().lower() for line in f if line.strip()}
+        else:
+            _BLACKLIST_CACHE = set()
+    return _BLACKLIST_CACHE
+
+def find_lookalike_brands(domain: str) -> list:
+    """
+    Detect brand names that are similar to part of the domain (typosquatting).
+    Uses difflib to compute similarity ratio.
+    """
+    lookalikes = []
+    domain_clean = domain.lower()
+    if domain_clean.startswith('www.'):
+        domain_clean = domain_clean[4:]
+
+    parts = domain_clean.split('.')
+
+    for brand in MYANMAR_BRANDS:
+        brand_norm = brand.replace(' ', '')
+        for part in parts:
+            if len(part) < 3:
+                continue
+            ratio = difflib.SequenceMatcher(None, part, brand_norm).ratio()
+            if ratio >= 0.85 or (abs(len(part) - len(brand_norm)) <= 1 and ratio >= 0.80):
+                lookalikes.append(brand)
+                break
+
+    return lookalikes
 
 def extract_features(url: URL) -> dict:
     raw = url.raw.lower()
@@ -185,8 +212,20 @@ def extract_features(url: URL) -> dict:
     features['has_https_in_path'] = 1 if 'https' in path else 0
     features['domain_hyphen_count'] = domain.count('-')
 
-    # Suspicious keywords count
-    keyword_count = sum(1 for kw in SUSPICIOUS_KEYWORDS if kw in raw)
+        # Suspicious keywords count (English with word boundaries, Myanmar with substring)
+    english_keywords = [kw for kw in SUSPICIOUS_KEYWORDS if all(ord(c) < 128 for c in kw)]
+    myanmar_keywords = [kw for kw in SUSPICIOUS_KEYWORDS if any(ord(c) > 127 for c in kw)]
+
+    keyword_count = 0
+    # English keywords: use regex word boundaries to avoid partial matches like 'win' in 'wikipedia'
+    for kw in english_keywords:
+        if re.search(r'\b' + re.escape(kw) + r'\b', raw):
+            keyword_count += 1
+    # Myanmar keywords: use simple substring (word boundaries not supported well)
+    for kw in myanmar_keywords:
+        if kw in raw:
+            keyword_count += 1
+
     features['suspicious_keyword_count'] = keyword_count
 
     # Suspicious TLD
@@ -197,43 +236,38 @@ def extract_features(url: URL) -> dict:
     # Path depth
     features['path_depth'] = path.count('/') if path else 0
 
-    # URL shortener check using proper function
+    # URL shortener check
     features['is_shortener'] = 1 if is_shortener_domain(domain) else 0
 
     # Brand detection (with leetspeak normalization)
     brand_found = []
-    # Normalize domain once
     domain_clean = domain.replace(' ', '')
-    domain_leet = normalize_leet(domain_clean)  # e.g., micros0ft -> microsoft
+    domain_leet = normalize_leet(domain_clean)
     path_clean = path.replace(' ', '')
-
-        # Lookalike brand detection (fuzzy)
-    lookalike_brands = find_lookalike_brands(domain)
-    features['lookalike_brands_detected'] = ','.join(lookalike_brands) if lookalike_brands else 'none'
-    features['lookalike_brand_count'] = len(lookalike_brands)
-
-
 
     for brand in MYANMAR_BRANDS:
         brand_normalized = brand.replace(' ', '')
-        # Check original domain and leetspeak-normalized domain
         if brand_normalized in domain_clean or brand_normalized in domain_leet or brand in path:
             brand_found.append(brand)
 
     features['brands_detected'] = ','.join(brand_found) if brand_found else 'none'
     features['brand_count'] = len(brand_found)
 
+    # Lookalike brand detection
+    lookalike_brands = find_lookalike_brands(domain)
+    features['lookalike_brands_detected'] = ','.join(lookalike_brands) if lookalike_brands else 'none'
+    features['lookalike_brand_count'] = len(lookalike_brands)
+
     # Domain digit count
     features['domain_digit_count'] = sum(c.isdigit() for c in domain)
 
-    # Homograph / IDN detection
+    # Homograph/IDN detection
     try:
         import idna
-        idna.encode(domain)  # Just to verify if IDN
+        idna.encode(domain)
         features['has_idn'] = 1 if any(ord(c) > 127 for c in domain) else 0
     except:
         features['has_idn'] = 0
-
 
     # Blacklist check
     blacklist = load_blacklist()
@@ -241,23 +275,8 @@ def extract_features(url: URL) -> dict:
     if domain_clean.startswith('www.'):
         domain_clean = domain_clean[4:]
     features['in_blacklist'] = 1 if domain_clean in blacklist else 0
-    
+
     # Include domain string for rule engine
     features['domain'] = domain
 
     return features
-
-
-# Cache for blacklist
-_BLACKLIST_CACHE = None
-
-def load_blacklist() -> set:
-    global _BLACKLIST_CACHE
-    if _BLACKLIST_CACHE is None:
-        blacklist_file = Path(__file__).resolve().parent.parent / "infrastructure" / "phishing_blacklist.txt"
-        if blacklist_file.exists():
-            with open(blacklist_file, 'r') as f:
-                _BLACKLIST_CACHE = {line.strip().lower() for line in f if line.strip()}
-        else:
-            _BLACKLIST_CACHE = set()
-    return _BLACKLIST_CACHE

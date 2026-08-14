@@ -37,7 +37,7 @@ def render_template(template_name: str, context: dict) -> HTMLResponse:
     template = template_env.get_template(template_name)
     return HTMLResponse(content=template.render(context))
 
-# --- Schemas ---
+# --- Request/Response Schemas ---
 class AnalyzeRequest(BaseModel):
     url: HttpUrl
 
@@ -120,7 +120,7 @@ async def history(request: Request, db: Session = Depends(get_db)):
     logs = db.query(AnalysisLog).order_by(AnalysisLog.created_at.desc()).limit(20).all()
     return render_template("history.html", {"request": request, "logs": logs})
 
-# ===================== Telegram Bot =====================
+# ===================== Telegram Bot Integration =====================
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 bot_app = None
 

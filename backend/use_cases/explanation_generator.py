@@ -1,7 +1,6 @@
 # backend/use_cases/explanation_generator.py
 from typing import Dict
 
-# Strong rules that indicate phishing
 STRONG_RULE_NAMES = {
     '_rule_brand_impersonation',
     '_rule_ip_address',
@@ -30,7 +29,7 @@ def get_detection_confidence(risk_assessment: Dict) -> str:
     # Case 1: Very low risk (likely legitimate)
     if risk_score <= 10:
         if rule_count == 0:
-            return "High"   # No suspicious indicators -> system is highly confident it's safe
+            return "High"
         else:
             return "Medium"
 
@@ -67,6 +66,7 @@ def generate_burmese_explanation(risk_assessment: Dict) -> str:
 
     confidence_map = {"High": "မြင့်မား", "Medium": "အလယ်အလတ်", "Low": "နည်းပါး"}
     explanation += f"**စနစ်၏ စစ်ဆေးမှု သေချာမှု အဆင့်:** {confidence_map[confidence]}\n"
+    explanation += "(၎င်းသည် စနစ်က ဤရလဒ်ကို မည်မျှသေချာစွာ ဆုံးဖြတ်ထားသည်ကို ဖော်ပြခြင်းဖြစ်ပြီး URL ၏ ဘေးကင်းမှုကို အာမခံချက်မဟုတ်ပါ။)\n\n"
 
     if ml_score is not None:
         explanation += f"(ML ခန့်မှန်းချက် - {ml_score}/100)\n\n"

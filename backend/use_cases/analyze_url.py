@@ -4,7 +4,7 @@ from backend.core.url import URL
 from backend.use_cases.feature_extractor import extract_features
 from backend.use_cases.rule_engine import run_rule_engine
 from backend.use_cases.risk_scorer import generate_risk_assessment, determine_risk_level
-from backend.use_cases.explanation_generator import generate_burmese_explanation
+from backend.use_cases.explanation_generator import generate_burmese_explanation, get_detection_confidence
 from backend.infrastructure.ml_predictor import ml_predictor
 
 URL_PATTERN = re.compile(r'(https?://[^\s]+)')
@@ -17,6 +17,7 @@ def extract_first_url(text: str) -> str:
 
 class AnalyzeURLUseCase:
     def execute(self, url_string: str) -> dict:
+        # 1. Extract and validate URL
         clean_url = extract_first_url(url_string)
         if len(clean_url) > 2000:
             raise ValueError("URL is too long (max 2000 characters)")
@@ -36,23 +37,25 @@ class AnalyzeURLUseCase:
             ml_score = int(ml_prob * 100)
             # Dynamic weighting based on ML confidence
             if ml_prob > 0.9:
-                ml_weight = 0.5   # ML very confident -> give it more weight
+                ml_weight = 0.5
             elif ml_prob > 0.7:
                 ml_weight = 0.3
             else:
-                ml_weight = 0.2   # default low weight
-        final_score = int((1 - ml_weight) * rule_score + ml_weight * ml_score)
-        final_score = min(final_score, 100)
-        if final_score < 1 and (rule_score > 0 or ml_score > 0):
-            final_score = 1
+                ml_weight = 0.2
+            final_score = int((1 - ml_weight) * rule_score + ml_weight * ml_score)
+            final_score = min(final_score, 100)
+            if final_score < 1 and (rule_score > 0 or ml_score > 0):
+                final_score = 1
         else:
             ml_score = None
             final_score = rule_score
 
-        # 5. Determine risk level from final score
+        # Safety fallback: if no rules triggered, ignore ML to prevent false positives
+        if rule_score == 0:
+            final_score = 0
+
         level = determine_risk_level(final_score)
 
-        # Build result
         result = {
             "url": str(url),
             "risk_score": final_score,
@@ -63,6 +66,5 @@ class AnalyzeURLUseCase:
             "ml_score": ml_score,
             "rule_score": rule_score,
         }
-        # Add explanation (now includes ml_score if available)
         result["explanation"] = generate_burmese_explanation(result)
         return result
