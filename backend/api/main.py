@@ -152,6 +152,16 @@ async def bot_handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logger.error(f"Bot handler error: {e}")
         await update.message.reply_text("ဝမ်းနည်းပါတယ်၊ စစ်ဆေးမှုမအောင်မြင်ပါ။")
 
+async def bot_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Sit-Say Par Bot အသုံးပြုနည်း\n\n"
+        "• URL သို့မဟုတ် စာသားကို ပို့ပါ။\n"
+        "• ရလဒ်ကို ချက်ချင်း ရရှိပါမည်။\n\n"
+        "အကူအညီလိုအပ်ပါက:\n"
+        "📧 sitsaypar@gmail.com\n"
+        "သို့မဟုတ် @SitSayParSupport (Telegram) သို့ ဆက်သွယ်ပါ။"
+    )
+
 @app.post("/telegram-webhook")
 async def telegram_webhook(update: dict):
     if bot_app:
@@ -170,6 +180,7 @@ async def on_startup():
             await bot_app.initialize()
             bot_app.add_handler(CommandHandler("start", bot_start))
             bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, bot_handle_message))
+            bot_app.add_handler(CommandHandler("help", bot_help))
             logger.info("Bot initialized and handlers registered.")
 
             webhook_url = "https://sit-say-par.onrender.com/telegram-webhook"

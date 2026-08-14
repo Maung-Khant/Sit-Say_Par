@@ -11,8 +11,9 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-    <!-- max-w-2xl ဖြင့် container ကို 672px ထိ ကျယ်စေပါသည် -->
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Main Container -->
     <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8">
         <div class="text-center mb-6">
             <h1 class="text-3xl font-bold text-gray-800">Sit-Say Par</h1>
@@ -22,7 +23,6 @@
         </div>
 
         <form action="/analyze-web" method="post" class="space-y-4">
-            <!-- py-6, text-xl ဖြင့် input box ကို ပိုကြီးစေပြီး placeholder အပြည့်ပေါ်စေရန် -->
             <input type="text" name="url"
                    placeholder="link (http:// သို့ https:// သို့ စာသားတစ်ခုလုံး)ကို ဒီမှာ paste လုပ်ပါ"
                    required
@@ -45,5 +45,13 @@
             </a>
         </div>
     </div>
+
+ <!-- index.html footer --> 
+    <footer class="mt-6 text-center text-sm text-gray-500">
+        <p>အကူအညီလိုအပ်ပါက 
+            <a href="mailto:sitsaypar@gmail.com" class="text-blue-600 hover:underline">sitsaypar@gmail.com</a> သို့ ဆက်သွယ်ပါ။
+        </p>
+    </footer>
+
 </body>
 </html>
