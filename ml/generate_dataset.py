@@ -9,18 +9,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from backend.core.url import URL
 from backend.use_cases.feature_extractor import extract_features
 
-# Existing hardcoded lists (you can keep them or replace with file reads)
-phishing_urls = [
-    # ... (keep your original list if you want, or remove)
-]
-
+# Original hardcoded lists (optional, can be empty)
+phishing_urls = []
 legitimate_urls = [
-    # ... (keep your original list)
+    "https://www.google.com",
+    "https://www.kbzbank.com",
+    "https://www.kbzpay.com",
+    "https://www.cbbank.com.mm",
+    "https://www.abank.com.mm",
+    "https://www.wavemoney.com.mm",
+    "https://www.mpt.com.mm",
+    "https://www.wikipedia.org",
+    "https://github.com",
+    "https://stackoverflow.com",
+    "https://www.amazon.com",
+    "https://www.microsoft.com",
+    "https://www.apple.com",
+    "https://www.linkedin.com",
+    "https://www.youtube.com",
 ]
 
 def load_urls_from_csv(csv_path, label):
     """Read URLs from a CSV file (with 'url' column)."""
     urls = []
+    if not csv_path.exists():
+        return []
     with open(csv_path, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -31,27 +44,15 @@ def load_urls_from_csv(csv_path, label):
 def generate_csv(output_path: str):
     rows = []
 
-    # Load original hardcoded lists (optional)
-    for url_str in phishing_urls:
-        rows.append((url_str, "bad"))
+    # Legitimate URLs (hardcoded)
     for url_str in legitimate_urls:
         rows.append((url_str, "good"))
 
-    # Load external files
+    # External phishing sources
     data_dir = Path(__file__).parent / "data"
-    # PhishTank
-    if (data_dir / "phishtank_raw.csv").exists():
-        rows.extend(load_urls_from_csv(data_dir / "phishtank_raw.csv", "bad"))
-    # OpenPhish
-    if (data_dir / "openphish_raw.csv").exists():
-        rows.extend(load_urls_from_csv(data_dir / "openphish_raw.csv", "bad"))
-    # Manual Myanmar phish
-    if (data_dir / "myanmar_phish.csv").exists():
-        rows.extend(load_urls_from_csv(data_dir / "myanmar_phish.csv", "bad"))
-    # Extra legitimate
-    from legitimate_urls_extra import extra_legitimate_urls
-    for url_str in extra_legitimate_urls:
-        rows.append((url_str, "good"))
+    rows.extend(load_urls_from_csv(data_dir / "openphish_raw.csv", "bad"))
+    rows.extend(load_urls_from_csv(data_dir / "urlhaus_raw.csv", "bad"))
+    rows.extend(load_urls_from_csv(data_dir / "myanmar_phish.csv", "bad"))
 
     # Process rows and extract features
     processed_rows = []
