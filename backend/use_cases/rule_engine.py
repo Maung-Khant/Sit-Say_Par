@@ -23,8 +23,10 @@ OFFICIAL_DOMAINS = {
     'kpay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
     'k pay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
     'k+': ['kbzpay.com', 'kbzbank.com'],
-    'kplus': ['kbzpay.com', 'kbzbank.com'],
-    'k+wallet': ['kbzpay.com', 'kbzbank.com'],
+    'kbz': ['kbzbank.com', 'kbzpay.com', 'kbzlife.com'],
+    'kbz bank': ['kbzbank.com', 'kbzlife.com'],
+    'kbzbank': ['kbzbank.com', 'kbzlife.com'],
+    'kbzlife': ['kbzlife.com'],
 
     # CB Bank
     'cb': ['cbbank.com.mm'],
@@ -190,6 +192,9 @@ def _is_official_domain(domain: str, brand: str) -> bool:
             return True
     return False
 
+def is_any_official_domain(domain: str, brand_list: list) -> bool:
+    """Check if domain is official for any given brand."""
+    return any(_is_official_domain(domain, brand) for brand in brand_list)
 
 # -------------------------------------------------------------------
 # WHOIS helper
@@ -237,6 +242,22 @@ def _rule_suspicious_tld(features: Dict) -> RuleResult:
 
 def _rule_suspicious_keywords(features: Dict) -> RuleResult:
     count = features.get('suspicious_keyword_count', 0)
+    if count == 0:
+        return (False, 0, "")
+    
+    # If domain is official for any detected brand, reduce impact of benign keywords
+    brands_str = features.get('brands_detected', 'none')
+    domain = features.get('domain', '')
+    if brands_str != 'none':
+        brand_list = [b.strip() for b in brands_str.split(',')]
+        if is_any_official_domain(domain, brand_list):
+            # Official domain: only alert if many suspicious keywords (very unlikely for legit)
+            if count >= 3:
+                return (True, 20, f"သံသယဖြစ်ဖွယ် စာလုံးရေ {count} လုံး ပါဝင်သည်။")
+            else:
+                return (False, 0, "")   # Suppress low-severity keyword alert on official domains
+    
+    # Normal path for non-official domains
     if count >= 3:
         return (True, 35, f"သံသယဖြစ်ဖွယ် စာလုံးရေ {count} လုံး (login, verify, bonus, free စသည်) ပါဝင်သည်။")
     elif count >= 1:
