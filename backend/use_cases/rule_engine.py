@@ -355,7 +355,7 @@ def _rule_leetspeak_brand(features: Dict) -> RuleResult:
 def _rule_leetspeak_keyword(features: Dict) -> RuleResult:
     leetspeak_keyword_count = features.get('leetspeak_keyword_count', 0)
     if leetspeak_keyword_count > 0:
-        return (True, 40, "ဤ URL တွင် leetspeak သုံး၍ သံသယဖြစ်ဖွယ် စာလုံးများ (login, verify စသည်) ကို ဝှက်ထားသည်။")
+        return (True, 60, "ဤ URL တွင် leetspeak သုံး၍ သံသယဖြစ်ဖွယ် စာလုံးများ (login, verify စသည်) ကို ဝှက်ထားသည်။")
     return (False, 0, "")
 
 ALL_RULES = [
