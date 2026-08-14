@@ -127,7 +127,9 @@ bot_app = None
 async def bot_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "မင်္ဂလာပါ၊ Sit-Say Par Bot မှကြိုဆိုပါတယ်။\n"
-        "သံသယဖြစ်ဖွယ် URL (သို့) စာသားကို ပို့ပေးပါ။"
+        "သံသယဖြစ်ဖွယ် URL (သို့) စာသားကို ပို့ပေးပါ။\n"
+        "အကူအညီလိုအပ်ပါက /help ကိုနှိပ်ပါ။\n"
+        "📧 sitsaypar@gmail.com"
     )
 
 async def bot_handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -178,9 +180,10 @@ async def on_startup():
         try:
             bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
             await bot_app.initialize()
+            # Register command handlers BEFORE message handler
             bot_app.add_handler(CommandHandler("start", bot_start))
-            bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, bot_handle_message))
             bot_app.add_handler(CommandHandler("help", bot_help))
+            bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, bot_handle_message))
             logger.info("Bot initialized and handlers registered.")
 
             webhook_url = "https://sit-say-par.onrender.com/telegram-webhook"
