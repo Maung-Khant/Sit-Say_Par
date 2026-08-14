@@ -12,7 +12,6 @@ RuleResult = Tuple[bool, int, str]
 # Official domains – prevents false positives on legitimate sites
 # -------------------------------------------------------------------
 OFFICIAL_DOMAINS = {
-    # KBZ Group
     'kbz': ['kbzbank.com', 'kbzpay.com', 'kbzlife.com'],
     'kbz bank': ['kbzbank.com', 'kbzlife.com'],
     'kbzbank': ['kbzbank.com', 'kbzlife.com'],
@@ -26,8 +25,6 @@ OFFICIAL_DOMAINS = {
     'kplus': ['kbzpay.com', 'kbzbank.com'],
     'k+wallet': ['kbzpay.com', 'kbzbank.com'],
     'kbzlife': ['kbzlife.com'],
-
-    # CB Bank
     'cb': ['cbbank.com.mm'],
     'cb bank': ['cbbank.com.mm'],
     'cbbank': ['cbbank.com.mm'],
@@ -35,38 +32,28 @@ OFFICIAL_DOMAINS = {
     'cooperative bank': ['cbbank.com.mm'],
     'cb pay': ['cbbank.com.mm'],
     'cbpay': ['cbbank.com.mm'],
-
-    # AYA Bank
     'aya': ['ayabank.com'],
     'aya bank': ['ayabank.com'],
     'ayabank': ['ayabank.com'],
     'ayeyarwady bank': ['ayeyarwadybank.com'],
     'aya pay': ['ayabank.com'],
     'ayapay': ['ayabank.com'],
-
-    # UAB Bank
     'uab': ['uab.com.mm'],
     'uab bank': ['uab.com.mm'],
     'uabbank': ['uab.com.mm'],
     'united amara bank': ['uab.com.mm'],
     'uab pay': ['uab.com.mm'],
     'uabpay': ['uab.com.mm'],
-
-    # A Bank (AGD)
     'a bank': ['abank.com.mm'],
     'abank': ['abank.com.mm'],
     'agd bank': ['agdbank.com'],
     'agd': ['agdbank.com'],
     'asia green development bank': ['agdbank.com'],
-
-    # Yoma Bank
     'yoma': ['yoma.com.mm'],
     'yoma bank': ['yoma.com.mm'],
     'yomabank': ['yoma.com.mm'],
     'yoma pay': ['yoma.com.mm'],
     'yomapay': ['yoma.com.mm'],
-
-    # Other Banks
     'mtb': ['mtb.com.mm'],
     'mtb bank': ['mtb.com.mm'],
     'myanma tourism bank': ['mtb.com.mm'],
@@ -80,15 +67,11 @@ OFFICIAL_DOMAINS = {
     'myanma foreign trade bank': ['mftb.gov.mm'],
     'meb': ['meb.gov.mm'],
     'myanma economic bank': ['meb.gov.mm'],
-
-    # Wave Money
     'wave': ['wavemoney.com.mm'],
     'wave money': ['wavemoney.com.mm'],
     'wavemoney': ['wavemoney.com.mm'],
     'wave pay': ['wavemoney.com.mm'],
     'wavepay': ['wavemoney.com.mm'],
-
-    # Telecom Operators
     'mpt': ['mpt.com.mm'],
     'myanmar posts and telecommunications': ['mpt.com.mm'],
     'telenor': ['telenor.com.mm'],
@@ -98,8 +81,6 @@ OFFICIAL_DOMAINS = {
     'mytel': ['mytel.com.mm'],
     'atom': ['atom.com.mm'],
     'atom myanmar': ['atom.com.mm'],
-
-    # International Tech
     'google': ['google.com'],
     'facebook': ['facebook.com'],
     'messenger': ['facebook.com'],
@@ -119,8 +100,6 @@ OFFICIAL_DOMAINS = {
     'paypal': ['paypal.com'],
     'binance': ['binance.com'],
     'octafx': ['octafx.com'],
-
-    # E-commerce / others
     'lazada': ['lazada.com.mm'],
     'shopee': ['shopee.com.mm'],
     'amazon': ['amazon.com'],
@@ -130,8 +109,6 @@ OFFICIAL_DOMAINS = {
     'city mart': ['citymart.com.mm'],
     'citymart': ['citymart.com.mm'],
     'shop.com.mm': ['shop.com.mm'],
-
-    # Delivery
     'dhl': ['dhl.com'],
     'fedex': ['fedex.com'],
     'ups': ['ups.com'],
@@ -139,8 +116,6 @@ OFFICIAL_DOMAINS = {
     'yangon door2door': ['yangondoor2door.com'],
     'j&t express': ['jtexpress.com'],
     'jt express': ['jtexpress.com'],
-
-    # Government Departments & Public Bodies
     'ird': ['ird.gov.mm'],
     'internal revenue department': ['ird.gov.mm'],
     'dme': ['dme.gov.mm'],
@@ -164,8 +139,6 @@ OFFICIAL_DOMAINS = {
     'union election commission': ['uec.gov.mm'],
     'dica': ['dica.gov.mm'],
     'directorate of investment and company administration': ['dica.gov.mm'],
-
-    # Other Notable Organizations
     'kpmg': ['kpmg.com.mm'],
     'quick loan': ['quickloan.com.mm'],
     'quickloan': ['quickloan.com.mm'],
@@ -261,7 +234,10 @@ def _rule_suspicious_keywords(features: Dict) -> RuleResult:
 
     brands_str = features.get('brands_detected', 'none')
     domain = features.get('domain', '')
-    if brands_str != 'none':
+    leetspeak_keyword_count = features.get('leetspeak_keyword_count', 0)
+
+    # If domain is official for any detected brand, and no leetspeak keywords, suppress low severity
+    if brands_str != 'none' and leetspeak_keyword_count == 0:
         brand_list = [b.strip() for b in brands_str.split(',')]
         if is_any_official_domain(domain, brand_list):
             if count >= 3:
@@ -269,6 +245,7 @@ def _rule_suspicious_keywords(features: Dict) -> RuleResult:
             else:
                 return (False, 0, "")
 
+    # Normal path
     if count >= 3:
         return (True, 35, f"သံသယဖြစ်ဖွယ် စာလုံးရေ {count} လုံး (login, verify, bonus, free စသည်) ပါဝင်သည်။")
     elif count >= 1:
@@ -369,6 +346,18 @@ def _rule_blacklist(features: Dict) -> RuleResult:
         return (True, 80, "ဤ domain သည် သိရှိထားသော phishing blacklist တွင် ပါဝင်သည်။")
     return (False, 0, "")
 
+def _rule_leetspeak_brand(features: Dict) -> RuleResult:
+    leet_brand_count = features.get('leet_brand_count', 0)
+    if leet_brand_count > 0:
+        return (True, 30, "ဤ domain သည် leetspeak ကိုအသုံးပြု၍ brand အမည်ကို အတုခိုးထားသည်။")
+    return (False, 0, "")
+
+def _rule_leetspeak_keyword(features: Dict) -> RuleResult:
+    leetspeak_keyword_count = features.get('leetspeak_keyword_count', 0)
+    if leetspeak_keyword_count > 0:
+        return (True, 40, "ဤ URL တွင် leetspeak သုံး၍ သံသယဖြစ်ဖွယ် စာလုံးများ (login, verify စသည်) ကို ဝှက်ထားသည်။")
+    return (False, 0, "")
+
 ALL_RULES = [
     _rule_ip_address,
     _rule_suspicious_tld,
@@ -385,6 +374,8 @@ ALL_RULES = [
     _rule_domain_age,
     _rule_lookalike_brand,
     _rule_blacklist,
+    _rule_leetspeak_brand,
+    _rule_leetspeak_keyword,
 ]
 
 def run_rule_engine(features: Dict) -> List[Dict]:

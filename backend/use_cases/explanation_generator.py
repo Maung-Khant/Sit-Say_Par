@@ -9,6 +9,8 @@ STRONG_RULE_NAMES = {
     '_rule_domain_age',
     '_rule_lookalike_brand',
     '_rule_blacklist',
+    '_rule_leetspeak_brand',
+    '_rule_leetspeak_keyword',
 }
 
 def get_detection_confidence(risk_assessment: Dict) -> str:

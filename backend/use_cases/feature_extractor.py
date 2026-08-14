@@ -28,7 +28,7 @@ SUSPICIOUS_TLDS = ['.tk', '.ml', '.ga', '.cf', '.xyz', '.top', '.club',
 
 # Comprehensive Myanmar brand list (lowercase) - includes banks, telcos, etc.
 MYANMAR_BRANDS = [
-    # Banks & Financial / Mobile-Money
+    # (ယခင် list အတိုင်း အပြည့်အစုံ ထည့်ပါ)
     "kbz", "kbz bank", "kbzbank", "kanbawza", "kanbawza bank",
     "kbzpay", "kbz pay", "kpay", "k pay", "k+", "kplus", "k+wallet",
     "kbzlife",
@@ -71,75 +71,50 @@ MYANMAR_BRANDS = [
     "glory farmer development bank", "g bank",
     "mineral development bank", "mdb",
     "farmers development bank mandalay", "fdb",
-
     # Telecom Operators
     "mpt", "myanmar posts and telecommunications",
     "telenor", "telenor myanmar",
     "ooredoo", "ooredoo myanmar",
-    "mytel",
-    "kddi",
-    "atom", "atom myanmar",
+    "mytel", "kddi", "atom", "atom myanmar",
     # Mobile Financial Services
-    "m-pitesan", "mpitesan",
-    "mytelpay", "mytel pay",
-    "mpt pay", "mptpay",
-
+    "m-pitesan", "mpitesan", "mytelpay", "mytel pay", "mpt pay", "mptpay",
     # Online Shopping Platforms
-    "lazada", "shopee", "ubuy",
-    "grip digi", "gripdigi",
-    "foodpanda", "grab", "grab myanmar",
-    "city mart", "citymart",
-    "aliexpress", "ali express", "alibaba",
-    "amazon", "temu",
-    "shop.com.mm",
-
+    "lazada", "shopee", "ubuy", "grip digi", "gripdigi",
+    "foodpanda", "grab", "grab myanmar", "city mart", "citymart",
+    "aliexpress", "ali express", "alibaba", "amazon", "temu", "shop.com.mm",
     # Government Departments
-    "ird", "internal revenue department",
-    "dme", "department of myanmar examinations",
-    "mrf",
-    "myanmar immigration", "immigration department",
-    "ycdc", "yangon city development committee",
-    "myanmar police force", "myanmar police",
-    "rtad", "road transport administration department",
-    "moee", "yangon electricity supply corporation", "yesc",
-    "myanmar customs department", "myanmar customs",
-    "department of labour",
-    "uec", "union election commission",
+    "ird", "internal revenue department", "dme", "department of myanmar examinations",
+    "mrf", "myanmar immigration", "immigration department", "ycdc",
+    "yangon city development committee", "myanmar police force", "myanmar police",
+    "rtad", "road transport administration department", "moee",
+    "yangon electricity supply corporation", "yesc", "myanmar customs department",
+    "myanmar customs", "department of labour", "uec", "union election commission",
     "dica", "directorate of investment and company administration",
-
     # Other Notable Organizations
-    "kpmg",
-    "quick loan", "quickloan",
-    "air thanlwin",
-    "myanmar national airlines", "man airlines",
-    "air kbz",
-    "fmi", "first myanmar investment",
-    "capital diamond star group", "cdsg",
-    "max myanmar",
-    "shwe taung",
-    "yoma strategic holdings",
-    "dhl", "fedex", "ups", "royal express", "yangon door2door",
-    "j&t express", "jt express",
-
+    "kpmg", "quick loan", "quickloan", "air thanlwin", "myanmar national airlines",
+    "man airlines", "air kbz", "fmi", "first myanmar investment",
+    "capital diamond star group", "cdsg", "max myanmar", "shwe taung",
+    "yoma strategic holdings", "dhl", "fedex", "ups", "royal express",
+    "yangon door2door", "j&t express", "jt express",
     # International Tech / Platform Brands
-    "facebook", "messenger", "meta",
-    "google", "gmail",
-    "apple", "icloud",
-    "microsoft", "outlook",
-    "netflix",
-    "whatsapp", "instagram", "tiktok", "viber", "telegram", "zoom",
-    "paypal",
-    "binance", "octafx",
+    "facebook", "messenger", "meta", "google", "gmail", "apple", "icloud",
+    "microsoft", "outlook", "netflix", "whatsapp", "instagram", "tiktok",
+    "viber", "telegram", "zoom", "paypal", "binance", "octafx",
 ]
 
 # Leetspeak mapping for homoglyph/typosquatting detection
-LEETSPEAK_MAP = str.maketrans({
-    '0': 'o', '1': 'l', '3': 'e', '4': 'a', '5': 's', '7': 't', '8': 'b', '9': 'g', '@': 'a'
-})
+# Base map (1 -> l)
+LEET_DIGITS_L = {'0': 'o', '1': 'l', '3': 'e', '4': 'a', '5': 's', '7': 't', '8': 'b', '9': 'g', '@': 'a'}
+# Alternative map (1 -> i) to catch "l0g1n" -> "login"
+LEET_DIGITS_I = LEET_DIGITS_L.copy()
+LEET_DIGITS_I['1'] = 'i'
 
-def normalize_leet(text: str) -> str:
-    """Convert common leetspeak digits to letters and lowercase."""
-    return text.translate(LEETSPEAK_MAP).lower()
+LEETSPEAK_MAP_L = str.maketrans(LEET_DIGITS_L)
+LEETSPEAK_MAP_I = str.maketrans(LEET_DIGITS_I)
+
+def normalize_leet(text: str, map_table=LEETSPEAK_MAP_L) -> str:
+    """Convert leetspeak digits to letters using given translate table."""
+    return text.translate(map_table).lower()
 
 # URL shortener domains (exact or subdomain)
 SHORTENER_DOMAINS = [
@@ -212,21 +187,35 @@ def extract_features(url: URL) -> dict:
     features['has_https_in_path'] = 1 if 'https' in path else 0
     features['domain_hyphen_count'] = domain.count('-')
 
-        # Suspicious keywords count (English with word boundaries, Myanmar with substring)
+    # Suspicious keywords count (English with word boundaries, leetspeak with substring if digits present)
     english_keywords = [kw for kw in SUSPICIOUS_KEYWORDS if all(ord(c) < 128 for c in kw)]
     myanmar_keywords = [kw for kw in SUSPICIOUS_KEYWORDS if any(ord(c) > 127 for c in kw)]
 
     keyword_count = 0
-    # English keywords: use regex word boundaries to avoid partial matches like 'win' in 'wikipedia'
+    leetspeak_keyword_count = 0
+    has_digits = any(c.isdigit() for c in raw)
+
+    # Generate normalized strings for leet detection (L and I variants)
+    raw_norm_l = normalize_leet(raw, LEETSPEAK_MAP_L)
+    raw_norm_i = normalize_leet(raw, LEETSPEAK_MAP_I)
+
     for kw in english_keywords:
-        if re.search(r'\b' + re.escape(kw) + r'\b', raw):
+        orig_found = bool(re.search(r'\b' + re.escape(kw) + r'\b', raw))
+        if orig_found:
             keyword_count += 1
-    # Myanmar keywords: use simple substring (word boundaries not supported well)
+        elif has_digits:
+            # Check substring in both normalized variants
+            if kw in raw_norm_l or kw in raw_norm_i:
+                keyword_count += 1
+                leetspeak_keyword_count += 1
+
+    # Myanmar keywords: simple substring on original raw
     for kw in myanmar_keywords:
         if kw in raw:
             keyword_count += 1
 
     features['suspicious_keyword_count'] = keyword_count
+    features['leetspeak_keyword_count'] = leetspeak_keyword_count
 
     # Suspicious TLD
     tld_match = re.search(r'\.[a-z]{2,}$', domain)
@@ -241,17 +230,24 @@ def extract_features(url: URL) -> dict:
 
     # Brand detection (with leetspeak normalization)
     brand_found = []
+    leet_brand_count = 0
     domain_clean = domain.replace(' ', '')
-    domain_leet = normalize_leet(domain_clean)
+    domain_leet_l = normalize_leet(domain_clean, LEETSPEAK_MAP_L)
+    domain_leet_i = normalize_leet(domain_clean, LEETSPEAK_MAP_I)
     path_clean = path.replace(' ', '')
 
     for brand in MYANMAR_BRANDS:
         brand_normalized = brand.replace(' ', '')
-        if brand_normalized in domain_clean or brand_normalized in domain_leet or brand in path:
+        found_in_original = brand_normalized in domain_clean or brand in path
+        found_in_leet = brand_normalized in domain_leet_l or brand_normalized in domain_leet_i
+        if found_in_original or found_in_leet:
             brand_found.append(brand)
+            if not found_in_original and found_in_leet:
+                leet_brand_count += 1
 
     features['brands_detected'] = ','.join(brand_found) if brand_found else 'none'
     features['brand_count'] = len(brand_found)
+    features['leet_brand_count'] = leet_brand_count
 
     # Lookalike brand detection
     lookalike_brands = find_lookalike_brands(domain)
