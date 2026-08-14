@@ -13,9 +13,9 @@ RuleResult = Tuple[bool, int, str]
 # -------------------------------------------------------------------
 OFFICIAL_DOMAINS = {
     # KBZ Group
-    'kbz': ['kbzbank.com', 'kbzpay.com'],
-    'kbz bank': ['kbzbank.com'],
-    'kbzbank': ['kbzbank.com'],
+    'kbz': ['kbzbank.com', 'kbzpay.com', 'kbzlife.com'],
+    'kbz bank': ['kbzbank.com', 'kbzlife.com'],
+    'kbzbank': ['kbzbank.com', 'kbzlife.com'],
     'kanbawza': ['kbzbank.com'],
     'kanbawza bank': ['kbzbank.com'],
     'kbzpay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
@@ -23,9 +23,8 @@ OFFICIAL_DOMAINS = {
     'kpay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
     'k pay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
     'k+': ['kbzpay.com', 'kbzbank.com'],
-    'kbz': ['kbzbank.com', 'kbzpay.com', 'kbzlife.com'],
-    'kbz bank': ['kbzbank.com', 'kbzlife.com'],
-    'kbzbank': ['kbzbank.com', 'kbzlife.com'],
+    'kplus': ['kbzpay.com', 'kbzbank.com'],
+    'k+wallet': ['kbzpay.com', 'kbzbank.com'],
     'kbzlife': ['kbzlife.com'],
 
     # CB Bank
@@ -75,6 +74,8 @@ OFFICIAL_DOMAINS = {
     'sathapana bank': ['sathapanabank.com'],
     'cbm': ['cbm.gov.mm'],
     'central bank of myanmar': ['cbm.gov.mm'],
+    'mcb': ['mcb.com.mm'],
+    'myanmar citizens bank': ['mcb.com.mm'],
 
     # Wave Money
     'wave': ['wavemoney.com.mm'],
@@ -177,19 +178,31 @@ OFFICIAL_DOMAINS = {
     'yoma strategic holdings': ['yoma.com.mm'],
 }
 
-
 def _is_official_domain(domain: str, brand: str) -> bool:
     """Check if domain is official for the given brand, stripping www if necessary."""
     official_list = OFFICIAL_DOMAINS.get(brand, [])
     if not official_list:
         return False
     domain_clean = domain.lower().rstrip('/')
-    # Remove leading www. for reliable matching
     if domain_clean.startswith('www.'):
         domain_clean = domain_clean[4:]
     for official in official_list:
         if domain_clean == official or domain_clean.endswith('.' + official):
             return True
+    return False
+
+def is_domain_official_for_any(domain: str) -> bool:
+    """
+    Check if the given domain matches any official domain in OFFICIAL_DOMAINS.
+    Prevents false positives when short brand substrings are detected.
+    """
+    domain_clean = domain.lower().rstrip('/')
+    if domain_clean.startswith('www.'):
+        domain_clean = domain_clean[4:]
+    for official_list in OFFICIAL_DOMAINS.values():
+        for official in official_list:
+            if domain_clean == official or domain_clean.endswith('.' + official):
+                return True
     return False
 
 def is_any_official_domain(domain: str, brand_list: list) -> bool:
@@ -219,7 +232,6 @@ def get_domain_age_days(domain: str) -> int | None:
     thread.join(timeout=3)  # 3 seconds maximum
     return result[0]
 
-
 # -------------------------------------------------------------------
 # Rule functions
 # -------------------------------------------------------------------
@@ -227,7 +239,6 @@ def _rule_ip_address(features: Dict) -> RuleResult:
     if features.get('is_ip', 0) == 1:
         return (True, 30, "IP လိပ်စာကို တိုက်ရိုက်အသုံးပြုထားသည် (domain name အစား)။")
     return (False, 0, "")
-
 
 def _rule_suspicious_tld(features: Dict) -> RuleResult:
     domain = features.get('domain', '')
@@ -238,7 +249,6 @@ def _rule_suspicious_tld(features: Dict) -> RuleResult:
     if tld in suspicious_tlds:
         return (True, 30, f"သံသယဖြစ်ဖွယ် domain အဆုံးသတ် ({tld}) ကို သုံးထားသည်။")
     return (False, 0, "")
-
 
 def _rule_suspicious_keywords(features: Dict) -> RuleResult:
     count = features.get('suspicious_keyword_count', 0)
@@ -255,7 +265,7 @@ def _rule_suspicious_keywords(features: Dict) -> RuleResult:
             if count >= 3:
                 return (True, 20, f"သံသယဖြစ်ဖွယ် စာလုံးရေ {count} လုံး ပါဝင်သည်။")
             else:
-                return (False, 0, "")   # Suppress low-severity keyword alert on official domains
+                return (False, 0, "")
     
     # Normal path for non-official domains
     if count >= 3:
@@ -264,24 +274,20 @@ def _rule_suspicious_keywords(features: Dict) -> RuleResult:
         return (True, 20, f"သံသယဖြစ်ဖွယ် စာလုံး {count} လုံး ပါဝင်သည်။")
     return (False, 0, "")
 
-
 def _rule_at_symbol(features: Dict) -> RuleResult:
     if features.get('has_at_symbol', 0) == 1:
         return (True, 20, "URL တွင် '@' သင်္ကေတ ပါဝင်သည်။")
     return (False, 0, "")
-
 
 def _rule_double_slash_redirect(features: Dict) -> RuleResult:
     if features.get('has_double_slash', 0) == 1:
         return (True, 15, "လမ်းကြောင်းထဲတွင် '//' ပါဝင်သဖြင့် redirect လုပ်နိုင်ခြေရှိသည်။")
     return (False, 0, "")
 
-
 def _rule_https_in_path(features: Dict) -> RuleResult:
     if features.get('has_https_in_path', 0) == 1:
         return (True, 15, "လမ်းကြောင်းထဲတွင် 'https' ပါဝင်သဖြင့် လှည့်စားရန် ကြိုးပမ်းမှုဖြစ်နိုင်သည်။")
     return (False, 0, "")
-
 
 def _rule_domain_hyphens(features: Dict) -> RuleResult:
     count = features.get('domain_hyphen_count', 0)
@@ -291,12 +297,10 @@ def _rule_domain_hyphens(features: Dict) -> RuleResult:
         return (True, 15, f"Domain တွင် hyphens {count} ခုပါဝင်သဖြင့် brand အတုခိုးရန် ကြိုးစားမှုဖြစ်နိုင်သည်။")
     return (False, 0, "")
 
-
 def _rule_shortener(features: Dict) -> RuleResult:
     if features.get('is_shortener', 0) == 1:
         return (True, 15, "URL shortener ဝန်ဆောင်မှုကို သုံးထားသည်။")
     return (False, 0, "")
-
 
 def _rule_long_url(features: Dict) -> RuleResult:
     length = features.get('url_length', 0)
@@ -304,12 +308,17 @@ def _rule_long_url(features: Dict) -> RuleResult:
         return (True, 10, f"URL အရှည် {length} လုံး ရှိသဖြင့် သံသယဖြစ်ဖွယ်ရှိသည်။")
     return (False, 0, "")
 
-
 def _rule_brand_impersonation(features: Dict) -> RuleResult:
     brands_str = features.get('brands_detected', 'none')
     if brands_str == 'none':
         return (False, 0, "")
     domain = features.get('domain', '')
+
+    # If the domain is official for any brand, skip this rule entirely.
+    # This prevents short brand substrings (e.g., "cb" in "mcb.com.mm") from causing false positives.
+    if is_domain_official_for_any(domain):
+        return (False, 0, "")
+
     brand_list = [b.strip() for b in brands_str.split(',')]
     suspicious_brands = []
     for brand in brand_list:
@@ -318,7 +327,6 @@ def _rule_brand_impersonation(features: Dict) -> RuleResult:
     if suspicious_brands:
         return (True, 70, f"ဤ URL သည် {', '.join(suspicious_brands)} ၏ အမှတ်တံဆိပ်ကို အတုခိုးထားသည် — တရားဝင် မဟုတ်နိုင်ပါ။")
     return (False, 0, "")
-
 
 def _rule_domain_numbers(features: Dict) -> RuleResult:
     digit_count = features.get('domain_digit_count', 0)
@@ -331,6 +339,8 @@ def _rule_lookalike_brand(features: Dict) -> RuleResult:
     if lookalikes_str == 'none':
         return (False, 0, "")
     domain = features.get('domain', '')
+    if is_domain_official_for_any(domain):
+        return (False, 0, "")
     brand_list = [b.strip() for b in lookalikes_str.split(',')]
     suspicious_brands = []
     for brand in brand_list:
@@ -344,7 +354,6 @@ def _rule_idn_homograph(features: Dict) -> RuleResult:
     if features.get('has_idn', 0) == 1:
         return (True, 25, "ဤ domain တွင် IDN Homograph တိုက်ခိုက်မှု ပါဝင်သည်။")
     return (False, 0, "")
-
 
 def _rule_domain_age(features: Dict) -> RuleResult:
     domain = features.get('domain', '')
@@ -375,9 +384,8 @@ ALL_RULES = [
     _rule_idn_homograph,
     _rule_domain_age,
     _rule_lookalike_brand,
-        _rule_blacklist,
+    _rule_blacklist,
 ]
-
 
 def run_rule_engine(features: Dict) -> List[Dict]:
     matched_rules = []
