@@ -53,6 +53,7 @@ def generate_csv(output_path: str):
     rows.extend(load_urls_from_csv(data_dir / "openphish_raw.csv", "bad"))
     rows.extend(load_urls_from_csv(data_dir / "urlhaus_raw.csv", "bad"))
     rows.extend(load_urls_from_csv(data_dir / "myanmar_phish.csv", "bad"))
+    rows.extend(load_urls_from_csv(data_dir / "typosquat_myanmar.csv", "bad"))
 
     # Process rows and extract features
     processed_rows = []
