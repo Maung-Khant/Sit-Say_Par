@@ -1,8 +1,10 @@
 # backend/use_cases/feature_extractor.py
 import re
+import difflib
+from pathlib import Path
 from backend.core.url import URL
 
-# Suspicious keywords
+# Suspicious keywords (English + Myanmar relevant)
 SUSPICIOUS_KEYWORDS = [
     'login', 'signin', 'verify', 'verification', 'secure', 'account',
     'update', 'upgrade', 'confirm', 'banking', 'password', 'credential',
@@ -10,11 +12,21 @@ SUSPICIOUS_KEYWORDS = [
     'free', 'bonus', 'claim', 'gift', 'lucky', 'win', 'prize',
     'security', 'auth', 'authenticate', 'unlock', 'reactivate',
     'support', 'compliance', 'token', 'sync', 'mfa', 'authorization',
-    'override', 'settlement', 'agent', 'portal', 'recover', 'restore'
+    'override', 'settlement', 'agent', 'portal', 'recover', 'restore',
+    # Myanmar scam keywords
+    'ဆုကြေး', 'ငွေထုတ်', 'အကောင့်အဆင့်မြှင့်', 'အတည်ပြုရန်',
+    'ပိတ်သိမ်းမည်', 'ချက်ချင်း', 'အရေးပေါ်', 'လက်ဆောင်',
+    'အကောင့်ဝင်', 'စကားဝှက်', 'ဘဏ်', 'ငွေလွှဲ',
+    'အောက်ပါလင့်ခ်', 'ဒီလင့်ခ်', 'ဆက်သွယ်ရန်',
+    'အကောင့်ပိတ်မည်', 'ငွေထုတ်ယူရန်', 'အကောင့်အတည်ပြုခြင်း',
+    'ဘဏ်အကောင့်', 'ငွေလက်ကျန်', 'ဘောနပ်စ်', 'ဆုလာဘ်',
+    'ငွေသွင်းရန်', 'ငွေထုတ်ရန်'
 ]
 
 # TLDs frequently abused by phishers
-SUSPICIOUS_TLDS = ['.tk', '.ml', '.ga', '.cf', '.xyz', '.top', '.club', '.info', '.website', '.online', '.test', '.help']
+SUSPICIOUS_TLDS = ['.tk', '.ml', '.ga', '.cf', '.xyz', '.top', '.club',
+                   '.info', '.website', '.online', '.test', '.help']
+
 # Comprehensive Myanmar brand list (lowercase)
 MYANMAR_BRANDS = [
     # Banks & Financial / Mobile-Money
@@ -109,6 +121,54 @@ LEETSPEAK_MAP = str.maketrans({
 def normalize_leet(text: str) -> str:
     """Convert common leetspeak digits to letters and lowercase."""
     return text.translate(LEETSPEAK_MAP).lower()
+
+def find_lookalike_brands(domain: str) -> list:
+    """
+    Detect brand names that are similar to part of the domain (typosquatting).
+    Uses difflib to compute similarity ratio.
+    """
+    lookalikes = []
+    # Remove leading www. and lower
+    domain_clean = domain.lower()
+    if domain_clean.startswith('www.'):
+        domain_clean = domain_clean[4:]
+
+    # Split domain into parts by dot
+    parts = domain_clean.split('.')
+
+    for brand in MYANMAR_BRANDS:
+        brand_norm = brand.replace(' ', '')
+        for part in parts:
+            # Skip very short parts (avoid false positives like 'k')
+            if len(part) < 3:
+                continue
+            # Compute similarity ratio (0 to 1)
+            ratio = difflib.SequenceMatcher(None, part, brand_norm).ratio()
+            # Trigger if very similar (>= 0.85) or identical length and edit distance small
+            if ratio >= 0.85 or (abs(len(part) - len(brand_norm)) <= 1 and ratio >= 0.80):
+                lookalikes.append(brand)
+                break  # one brand matched enough
+
+    return lookalikes
+
+# URL shortener domains (exact or subdomain)
+SHORTENER_DOMAINS = [
+    'bit.ly', 'tinyurl.com', 'goo.gl', 'ow.ly', 't.co',
+    'kpay.link', 'wavepay.cc', 'kbzpay.link', 'mpt.shop',
+    'cutt.ly', 'shorturl.at', 'rb.gy'
+]
+
+def is_shortener_domain(domain: str) -> bool:
+    """Check if domain is a URL shortener (exact match or subdomain)."""
+    domain_clean = domain.lower()
+    if domain_clean.startswith('www.'):
+        domain_clean = domain_clean[4:]
+    for short in SHORTENER_DOMAINS:
+        if domain_clean == short or domain_clean.endswith('.' + short):
+            return True
+    return False
+
+
 def extract_features(url: URL) -> dict:
     raw = url.raw.lower()
     domain = url.domain
@@ -137,36 +197,67 @@ def extract_features(url: URL) -> dict:
     # Path depth
     features['path_depth'] = path.count('/') if path else 0
 
-    # URL shortener check
-    shorteners = [
-    'bit.ly', 'tinyurl.com', 'goo.gl', 'ow.ly', 't.co',
-    'kpay.link', 'wavepay.cc', 'kbzpay.link', 'mpt.shop',
-    'cutt.ly', 'shorturl.at', 'rb.gy'
-    ]
-    features['is_shortener'] = 1 if any(s in domain for s in shorteners) else 0
+    # URL shortener check using proper function
+    features['is_shortener'] = 1 if is_shortener_domain(domain) else 0
 
-    # Brand detection
+    # Brand detection (with leetspeak normalization)
     brand_found = []
+    # Normalize domain once
+    domain_clean = domain.replace(' ', '')
+    domain_leet = normalize_leet(domain_clean)  # e.g., micros0ft -> microsoft
+    path_clean = path.replace(' ', '')
+
+        # Lookalike brand detection (fuzzy)
+    lookalike_brands = find_lookalike_brands(domain)
+    features['lookalike_brands_detected'] = ','.join(lookalike_brands) if lookalike_brands else 'none'
+    features['lookalike_brand_count'] = len(lookalike_brands)
+
+
+
     for brand in MYANMAR_BRANDS:
         brand_normalized = brand.replace(' ', '')
-        domain_clean = domain.replace(' ', '')
-        if brand_normalized in domain_clean or brand in path:
+        # Check original domain and leetspeak-normalized domain
+        if brand_normalized in domain_clean or brand_normalized in domain_leet or brand in path:
             brand_found.append(brand)
+
     features['brands_detected'] = ','.join(brand_found) if brand_found else 'none'
     features['brand_count'] = len(brand_found)
 
     # Domain digit count
     features['domain_digit_count'] = sum(c.isdigit() for c in domain)
 
-# Homograph detection: check if domain contains non-ASCII characters (IDN)
+    # Homograph / IDN detection
     try:
         import idna
-        idna.encode(domain)  # If domain is already punycode, this won't raise
+        idna.encode(domain)  # Just to verify if IDN
         features['has_idn'] = 1 if any(ord(c) > 127 for c in domain) else 0
     except:
         features['has_idn'] = 0
 
+
+    # Blacklist check
+    blacklist = load_blacklist()
+    domain_clean = domain.lower()
+    if domain_clean.startswith('www.'):
+        domain_clean = domain_clean[4:]
+    features['in_blacklist'] = 1 if domain_clean in blacklist else 0
+    
     # Include domain string for rule engine
     features['domain'] = domain
 
     return features
+
+
+# Cache for blacklist
+_BLACKLIST_CACHE = None
+
+def load_blacklist() -> set:
+    global _BLACKLIST_CACHE
+    if _BLACKLIST_CACHE is None:
+        blacklist_file = Path(__file__).resolve().parent.parent / "infrastructure" / "phishing_blacklist.txt"
+        if blacklist_file.exists():
+            with open(blacklist_file, 'r') as f:
+                _BLACKLIST_CACHE = {line.strip().lower() for line in f if line.strip()}
+        else:
+            _BLACKLIST_CACHE = set()
+    return _BLACKLIST_CACHE

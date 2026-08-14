@@ -305,6 +305,19 @@ def _rule_domain_numbers(features: Dict) -> RuleResult:
         return (True, 5, f"Domain တွင် နံပါတ်များ ပုံမှန်မဟုတ်ဘဲ များစွာပါဝင်သည် ({digit_count} လုံး)။")
     return (False, 0, "")
 
+def _rule_lookalike_brand(features: Dict) -> RuleResult:
+    lookalikes_str = features.get('lookalike_brands_detected', 'none')
+    if lookalikes_str == 'none':
+        return (False, 0, "")
+    domain = features.get('domain', '')
+    brand_list = [b.strip() for b in lookalikes_str.split(',')]
+    suspicious_brands = []
+    for brand in brand_list:
+        if not _is_official_domain(domain, brand):
+            suspicious_brands.append(brand)
+    if suspicious_brands:
+        return (True, 40, f"ဤ URL သည် {', '.join(suspicious_brands)} နှင့် ဆင်တူသော domain အမည်ကို အသုံးပြုထားသည် (typosquatting ဖြစ်နိုင်သည်)။")
+    return (False, 0, "")
 
 def _rule_idn_homograph(features: Dict) -> RuleResult:
     if features.get('has_idn', 0) == 1:
@@ -321,6 +334,10 @@ def _rule_domain_age(features: Dict) -> RuleResult:
         return (True, 20, f"Domain သက်တမ်း {age_days} ရက်သာရှိသေးသည် (အသစ်ဖြစ်နိုင်သည်)။")
     return (False, 0, "")
 
+def _rule_blacklist(features: Dict) -> RuleResult:
+    if features.get('in_blacklist', 0) == 1:
+        return (True, 80, "ဤ domain သည် သိရှိထားသော phishing blacklist တွင် ပါဝင်သည်။")
+    return (False, 0, "")
 
 ALL_RULES = [
     _rule_ip_address,
@@ -336,6 +353,8 @@ ALL_RULES = [
     _rule_domain_numbers,
     _rule_idn_homograph,
     _rule_domain_age,
+    _rule_lookalike_brand,
+        _rule_blacklist,
 ]
 
 

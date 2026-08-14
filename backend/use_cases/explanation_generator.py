@@ -8,6 +8,8 @@ STRONG_RULE_NAMES = {
     '_rule_suspicious_tld',
     '_rule_idn_homograph',
     '_rule_domain_age',
+    '_rule_lookalike_brand',
+    '_rule_blacklist',
 }
 
 def get_detection_confidence(risk_assessment: Dict) -> str:

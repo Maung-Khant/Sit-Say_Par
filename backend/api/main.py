@@ -55,7 +55,7 @@ class AnalyzeResponse(BaseModel):
 
 # --- JSON API Endpoint ---
 @app.post("/analyze", response_model=AnalyzeResponse)
-@limiter.limit("5/minute")
+@limiter.limit("60/minute")
 def analyze_url(request: Request, analyze_req: AnalyzeRequest, db: Session = Depends(get_db)):
     try:
         use_case = AnalyzeURLUseCase()
@@ -82,7 +82,7 @@ async def home(request: Request):
     return render_template("index.html", {"request": request})
 
 @app.post("/analyze-web", response_class=HTMLResponse)
-@limiter.limit("5/minute")
+@limiter.limit("60/minute")
 async def analyze_web(request: Request, url: str = Form(...), db: Session = Depends(get_db)):
     try:
         use_case = AnalyzeURLUseCase()

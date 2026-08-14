@@ -18,7 +18,7 @@ SUSPICIOUS_TLDS = ['.tk', '.ml', '.ga', '.cf', '.xyz', '.top', '.club', '.info',
 MYANMAR_BRANDS = [
     # Banks & Financial / Mobile-Money Institutions
     "kbz", "kbz bank", "kbzbank", "kanbawza", "kanbawza bank",
-    "kbzpay", "kbz pay", "kpay", "k pay", "k+", "kplus", "k+wallet",
+    "kbzpay", "kbz pay", "kpay",
     "cb", "cb bank", "cbbank", "co-operative bank", "cooperative bank",
     "cb pay", "cbpay",
     "yoma", "yoma bank", "yomabank", "yoma pay", "yomapay",
