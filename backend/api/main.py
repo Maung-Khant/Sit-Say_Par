@@ -115,6 +115,10 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
             "error": "URL ဖြည့်သွင်းမှု မမှန်ကန်ပါ။ ဥပမာ - http://example.com or https://example.com "
         })
 
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy(request: Request):
+    return render_template("privacy.html", {"request": request})
+
 @app.get("/history", response_class=HTMLResponse)
 async def history(request: Request, db: Session = Depends(get_db)):
     logs = db.query(AnalysisLog).order_by(AnalysisLog.created_at.desc()).limit(20).all()
