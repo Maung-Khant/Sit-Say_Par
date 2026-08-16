@@ -4,7 +4,7 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
   if (!url) return;
 
   const resultDiv = document.getElementById('result');
-  resultDiv.innerHTML = "Scanning...";
+  resultDiv.textContent = "Scanning...";  // safe: plain text
 
   try {
     const response = await fetch("https://sit-say-par.onrender.com/analyze", {
@@ -14,7 +14,7 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
     });
 
     if (!response.ok) {
-      resultDiv.innerHTML = "API Error: " + response.status;
+      resultDiv.textContent = "API Error: " + response.status;
       return;
     }
 
@@ -26,14 +26,42 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
     };
     const confidenceLabel = confidenceMap[data.detection_confidence] || data.detection_confidence;
 
-    resultDiv.innerHTML = `
-      <strong>Risk:</strong> <span class="${data.risk_level.toLowerCase()}">${data.risk_level}</span> (${data.risk_score}/100)<br>
-      <strong>စနစ်၏ စစ်ဆေးမှု သေချာမှု:</strong> <span class="confidence-${data.detection_confidence.toLowerCase()}">${confidenceLabel}</span><br>
-      <small>${data.explanation.split('\n').slice(0,5).join('<br>')}</small>
-      <hr style="margin: 8px 0;">
-      <small>📧 အကူအညီလိုအပ်ပါက: <a href="mailto:sitsaypar@gmail.com" style="color:#007bff;">sitsaypar@gmail.com</a></small>
-    `;
+    // Clear resultDiv
+    resultDiv.textContent = "";
+
+    // Risk line
+    const riskLine = document.createElement('p');
+    riskLine.textContent = `Risk: ${data.risk_level} (${data.risk_score}/100)`;
+    riskLine.className = data.risk_level.toLowerCase();
+    resultDiv.appendChild(riskLine);
+
+    // Confidence line
+    const confLine = document.createElement('p');
+    confLine.textContent = `စနစ်၏ စစ်ဆေးမှု သေချာမှု: ${confidenceLabel}`;
+    confLine.className = `confidence-${data.detection_confidence.toLowerCase()}`;
+    resultDiv.appendChild(confLine);
+
+    // Explanation (first 5 lines)
+    const explanationText = data.explanation.split('\n').slice(0, 5).join(' ');
+    const explanationPara = document.createElement('small');
+    explanationPara.textContent = explanationText;
+    resultDiv.appendChild(explanationPara);
+
+    // Contact email
+    const hr = document.createElement('hr');
+    hr.style.margin = '8px 0';
+    resultDiv.appendChild(hr);
+
+    const contactPara = document.createElement('small');
+    contactPara.textContent = "📧 အကူအညီလိုအပ်ပါက: ";
+    const emailLink = document.createElement('a');
+    emailLink.href = "mailto:sitsaypar@gmail.com";
+    emailLink.textContent = "sitsaypar@gmail.com";
+    emailLink.style.color = "#007bff";
+    contactPara.appendChild(emailLink);
+    resultDiv.appendChild(contactPara);
+
   } catch (error) {
-    resultDiv.innerHTML = "Error: " + error.message;
+    resultDiv.textContent = "Error: " + error.message;
   }
 });
