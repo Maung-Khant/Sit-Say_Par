@@ -119,6 +119,10 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
 async def privacy(request: Request):
     return render_template("privacy.html", {"request": request})
 
+@app.get("/support", response_class=HTMLResponse)
+async def support(request: Request):
+    return render_template("support.html", {"request": request})
+
 @app.get("/history", response_class=HTMLResponse)
 async def history(request: Request, db: Session = Depends(get_db)):
     logs = db.query(AnalysisLog).order_by(AnalysisLog.created_at.desc()).limit(20).all()
