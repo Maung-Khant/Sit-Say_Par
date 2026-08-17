@@ -187,25 +187,26 @@ def extract_features(url: URL) -> dict:
     features['has_https_in_path'] = 1 if 'https' in path else 0
     features['domain_hyphen_count'] = domain.count('-')
 
-    # Suspicious keywords count (English with word boundaries, leetspeak with substring if digits present)
+       # Suspicious keywords count (English with word boundaries, leetspeak in path only)
     english_keywords = [kw for kw in SUSPICIOUS_KEYWORDS if all(ord(c) < 128 for c in kw)]
     myanmar_keywords = [kw for kw in SUSPICIOUS_KEYWORDS if any(ord(c) > 127 for c in kw)]
 
     keyword_count = 0
     leetspeak_keyword_count = 0
-    has_digits = any(c.isdigit() for c in raw)
 
-    # Generate normalized strings for leet detection (L and I variants)
-    raw_norm_l = normalize_leet(raw, LEETSPEAK_MAP_L)
-    raw_norm_i = normalize_leet(raw, LEETSPEAK_MAP_I)
+    # Path lowercased and normalized for leet detection
+    path_lower = path.lower()
+    path_norm_l = normalize_leet(path_lower, LEETSPEAK_MAP_L)
+    path_norm_i = normalize_leet(path_lower, LEETSPEAK_MAP_I)
 
     for kw in english_keywords:
+        # Check original word boundary in full raw
         orig_found = bool(re.search(r'\b' + re.escape(kw) + r'\b', raw))
         if orig_found:
             keyword_count += 1
-        elif has_digits:
-            # Check substring in both normalized variants
-            if kw in raw_norm_l or kw in raw_norm_i:
+        else:
+            # Leetspeak detection only on path (prevents false positives like "ibanking" containing "banking")
+            if kw in path_norm_l or kw in path_norm_i:
                 keyword_count += 1
                 leetspeak_keyword_count += 1
 

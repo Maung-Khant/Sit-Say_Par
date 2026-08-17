@@ -12,9 +12,9 @@ RuleResult = Tuple[bool, int, str]
 # Official domains – prevents false positives on legitimate sites
 # -------------------------------------------------------------------
 OFFICIAL_DOMAINS = {
-    'kbz': ['kbzbank.com', 'kbzpay.com', 'kbzlife.com'],
-    'kbz bank': ['kbzbank.com', 'kbzlife.com'],
-    'kbzbank': ['kbzbank.com', 'kbzlife.com'],
+    'kbz': ['kbzbank.com', 'kbzpay.com', 'kbzlife.com', 'ibanking.kbzbank.com'],
+    'kbz bank': ['kbzbank.com', 'kbzlife.com', 'ibanking.kbzbank.com'],
+    'kbzbank': ['kbzbank.com', 'kbzlife.com', 'ibanking.kbzbank.com'],
     'kanbawza': ['kbzbank.com'],
     'kanbawza bank': ['kbzbank.com'],
     'kbzpay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
@@ -363,7 +363,6 @@ ALL_RULES = [
     _rule_suspicious_tld,
     _rule_suspicious_keywords,
     _rule_at_symbol,
-    _rule_double_slash_redirect,
     _rule_https_in_path,
     _rule_domain_hyphens,
     _rule_shortener,
