@@ -1,8 +1,9 @@
 # ml/generate_dataset.py
+import csv
 import sys
 from pathlib import Path
+
 import pandas as pd
-import csv
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -29,6 +30,7 @@ legitimate_urls = [
     "https://www.youtube.com",
 ]
 
+
 def load_urls_from_csv(csv_path, label):
     """Read URLs from a CSV file (with 'url' column)."""
     urls = []
@@ -40,6 +42,7 @@ def load_urls_from_csv(csv_path, label):
             if row.get("url"):
                 urls.append(row["url"].strip())
     return [(u, label) for u in urls]
+
 
 def generate_csv(output_path: str):
     rows = []
@@ -62,7 +65,9 @@ def generate_csv(output_path: str):
             url_obj = URL(url_str)
             feats = extract_features(url_obj)
             # Keep only numeric features for ML
-            feats = {k: v for k, v in feats.items() if isinstance(v, (int, float, bool))}
+            feats = {
+                k: v for k, v in feats.items() if isinstance(v, (int, float, bool))
+            }
             row = {"url": url_str, "label": label}
             row.update(feats)
             processed_rows.append(row)
@@ -74,11 +79,18 @@ def generate_csv(output_path: str):
 
     df = pd.DataFrame(processed_rows)
     # Ensure only numeric columns (plus url, label)
-    numeric_cols = ['url', 'label'] + [c for c in df.columns if c not in ('url', 'label') and pd.api.types.is_numeric_dtype(df[c])]
+    numeric_cols = ["url", "label"] + [
+        c
+        for c in df.columns
+        if c not in ("url", "label") and pd.api.types.is_numeric_dtype(df[c])
+    ]
     df = df[numeric_cols]
     df.to_csv(output_path, index=False)
     print(f"Dataset saved to {output_path} with {len(df)} samples.")
-    print(f"Phishing: {len(df[df['label']=='bad'])} | Legitimate: {len(df[df['label']=='good'])}")
+    print(
+        f"Phishing: {len(df[df['label']=='bad'])} | Legitimate: {len(df[df['label']=='good'])}"
+    )
+
 
 if __name__ == "__main__":
     output = Path(__file__).parent / "data" / "urlset.csv"

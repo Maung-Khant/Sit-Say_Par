@@ -1,4 +1,13 @@
+*.db
+*.save
+*.zip
+*.xpi
+private/
 venv/
+__pycache__/
+*.pyc
+.env
+.pytest_cache/venv/
 __pycache__/
 *.pyc
 .env

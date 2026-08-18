@@ -1,23 +1,25 @@
 # backend/api/main.py
-import os
 import logging
+import os
 from pathlib import Path
 
-from fastapi import FastAPI, Request, Form, Depends, HTTPException
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel, HttpUrl
-from sqlalchemy.orm import Session
-from jinja2 import Environment, FileSystemLoader
 from dotenv import load_dotenv
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from fastapi import Depends, FastAPI, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from jinja2 import Environment, FileSystemLoader
+from pydantic import BaseModel, HttpUrl
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from sqlalchemy.orm import Session
+from telegram import Update
+from telegram.ext import (ApplicationBuilder, CommandHandler, ContextTypes,
+                          MessageHandler, filters)
 
-from backend.use_cases.analyze_url import AnalyzeURLUseCase
-from backend.infrastructure.database import init_db, get_db
+from backend.infrastructure.database import get_db, init_db
 from backend.infrastructure.models import AnalysisLog
-from backend.use_cases.explanation_generator import generate_burmese_explanation, get_detection_confidence
+from backend.use_cases.analyze_url import AnalyzeURLUseCase
+from backend.use_cases.explanation_generator import (
+    generate_burmese_explanation, get_detection_confidence)
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -33,13 +35,16 @@ app.state.limiter = limiter
 BASE_DIR = Path(__file__).resolve().parent
 template_env = Environment(loader=FileSystemLoader(os.path.join(BASE_DIR, "templates")))
 
+
 def render_template(template_name: str, context: dict) -> HTMLResponse:
     template = template_env.get_template(template_name)
     return HTMLResponse(content=template.render(context))
 
+
 # --- Request/Response Schemas ---
 class AnalyzeRequest(BaseModel):
     url: HttpUrl
+
 
 class AnalyzeResponse(BaseModel):
     url: str
@@ -53,10 +58,13 @@ class AnalyzeResponse(BaseModel):
     rule_score: int | None = None
     detection_confidence: str | None = None
 
+
 # --- JSON API Endpoint ---
 @app.post("/analyze", response_model=AnalyzeResponse)
 @limiter.limit("60/minute")
-def analyze_url(request: Request, analyze_req: AnalyzeRequest, db: Session = Depends(get_db)):
+def analyze_url(
+    request: Request, analyze_req: AnalyzeRequest, db: Session = Depends(get_db)
+):
     try:
         use_case = AnalyzeURLUseCase()
         result = use_case.execute(str(analyze_req.url))
@@ -68,7 +76,7 @@ def analyze_url(request: Request, analyze_req: AnalyzeRequest, db: Session = Dep
             risk_score=result["risk_score"],
             risk_level=result["risk_level"],
             rules_triggered=result["total_rules_triggered"],
-            explanation=result["explanation"]
+            explanation=result["explanation"],
         )
         db.add(log)
         db.commit()
@@ -76,14 +84,18 @@ def analyze_url(request: Request, analyze_req: AnalyzeRequest, db: Session = Dep
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 # --- Web UI Endpoints ---
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return render_template("index.html", {"request": request})
 
+
 @app.post("/analyze-web", response_class=HTMLResponse)
 @limiter.limit("60/minute")
-async def analyze_web(request: Request, url: str = Form(...), db: Session = Depends(get_db)):
+async def analyze_web(
+    request: Request, url: str = Form(...), db: Session = Depends(get_db)
+):
     try:
         use_case = AnalyzeURLUseCase()
         result = use_case.execute(url)
@@ -93,44 +105,55 @@ async def analyze_web(request: Request, url: str = Form(...), db: Session = Depe
             risk_score=result["risk_score"],
             risk_level=result["risk_level"],
             rules_triggered=result["total_rules_triggered"],
-            explanation=result["explanation"]
+            explanation=result["explanation"],
         )
         db.add(log)
         db.commit()
 
         confidence = get_detection_confidence(result)
 
-        return render_template("result.html", {
-            "request": request,
-            "url": result["url"],
-            "risk_score": result["risk_score"],
-            "risk_level": result["risk_level"],
-            "explanation": result["explanation"],
-            "detection_confidence": confidence,
-        })
+        return render_template(
+            "result.html",
+            {
+                "request": request,
+                "url": result["url"],
+                "risk_score": result["risk_score"],
+                "risk_level": result["risk_level"],
+                "explanation": result["explanation"],
+                "detection_confidence": confidence,
+            },
+        )
 
     except ValueError as e:
-        return render_template("index.html", {
-            "request": request,
-            "error": "URL ဖြည့်သွင်းမှု မမှန်ကန်ပါ။ ဥပမာ - http://example.com or https://example.com "
-        })
+        return render_template(
+            "index.html",
+            {
+                "request": request,
+                "error": "URL ဖြည့်သွင်းမှု မမှန်ကန်ပါ။ ဥပမာ - http://example.com or https://example.com ",
+            },
+        )
+
 
 @app.get("/privacy", response_class=HTMLResponse)
 async def privacy(request: Request):
     return render_template("privacy.html", {"request": request})
 
+
 @app.get("/support", response_class=HTMLResponse)
 async def support(request: Request):
     return render_template("support.html", {"request": request})
+
 
 @app.get("/history", response_class=HTMLResponse)
 async def history(request: Request, db: Session = Depends(get_db)):
     logs = db.query(AnalysisLog).order_by(AnalysisLog.created_at.desc()).limit(20).all()
     return render_template("history.html", {"request": request, "logs": logs})
 
+
 # ===================== Telegram Bot Integration =====================
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 bot_app = None
+
 
 async def bot_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -139,6 +162,7 @@ async def bot_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "အကူအညီလိုအပ်ပါက /help ကိုနှိပ်ပါ။\n"
         "📧 sitsaypar@gmail.com"
     )
+
 
 async def bot_handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
@@ -157,10 +181,11 @@ async def bot_handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE)
             f"📊 *စနစ်၏ စစ်ဆေးမှု သေချာမှု:* {confidence_map[confidence]}\n"
             f"{result['explanation']}"
         )
-        await update.message.reply_text(response, parse_mode='Markdown')
+        await update.message.reply_text(response, parse_mode="Markdown")
     except Exception as e:
         logger.error(f"Bot handler error: {e}")
         await update.message.reply_text("ဝမ်းနည်းပါတယ်၊ စစ်ဆေးမှုမအောင်မြင်ပါ။")
+
 
 async def bot_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -172,11 +197,13 @@ async def bot_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "သို့မဟုတ် @SitSayParSupport (Telegram) သို့ ဆက်သွယ်ပါ။"
     )
 
+
 @app.post("/telegram-webhook")
 async def telegram_webhook(update: dict):
     if bot_app:
         await bot_app.process_update(Update.de_json(update, bot_app.bot))
     return {"status": "ok"}
+
 
 @app.on_event("startup")
 async def on_startup():
@@ -191,7 +218,9 @@ async def on_startup():
             # Register command handlers BEFORE message handler
             bot_app.add_handler(CommandHandler("start", bot_start))
             bot_app.add_handler(CommandHandler("help", bot_help))
-            bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, bot_handle_message))
+            bot_app.add_handler(
+                MessageHandler(filters.TEXT & ~filters.COMMAND, bot_handle_message)
+            )
             logger.info("Bot initialized and handlers registered.")
 
             webhook_url = "https://sit-say-par.onrender.com/telegram-webhook"

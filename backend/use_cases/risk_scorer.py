@@ -1,9 +1,11 @@
 # backend/use_cases/risk_scorer.py
-from typing import List, Dict
+from typing import Dict, List
+
 
 def calculate_risk_score(matched_rules: List[Dict]) -> int:
-    total = sum(rule['score'] for rule in matched_rules)
+    total = sum(rule["score"] for rule in matched_rules)
     return min(total, 100)
+
 
 def determine_risk_level(score: int) -> str:
     if score >= 80:
@@ -14,6 +16,7 @@ def determine_risk_level(score: int) -> str:
         return "Medium"
     else:
         return "Low"
+
 
 def generate_risk_assessment(matched_rules: List[Dict]) -> Dict:
     score = calculate_risk_score(matched_rules)

@@ -2,16 +2,17 @@
 from typing import Dict
 
 STRONG_RULE_NAMES = {
-    '_rule_brand_impersonation',
-    '_rule_ip_address',
-    '_rule_suspicious_tld',
-    '_rule_idn_homograph',
-    '_rule_domain_age',
-    '_rule_lookalike_brand',
-    '_rule_blacklist',
-    '_rule_leetspeak_brand',
-    '_rule_leetspeak_keyword',
+    "_rule_brand_impersonation",
+    "_rule_ip_address",
+    "_rule_suspicious_tld",
+    "_rule_idn_homograph",
+    "_rule_domain_age",
+    "_rule_lookalike_brand",
+    "_rule_blacklist",
+    "_rule_leetspeak_brand",
+    "_rule_leetspeak_keyword",
 }
+
 
 def get_detection_confidence(risk_assessment: Dict) -> str:
     """
@@ -20,13 +21,15 @@ def get_detection_confidence(risk_assessment: Dict) -> str:
     Medium = moderate evidence, some uncertainty
     Low    = ambiguous or insufficient evidence
     """
-    ml_score = risk_assessment.get('ml_score')
-    rule_count = risk_assessment.get('total_rules_triggered', 0)
-    matched_rules = risk_assessment.get('matched_rules', [])
-    risk_score = risk_assessment.get('risk_score', 0)
+    ml_score = risk_assessment.get("ml_score")
+    rule_count = risk_assessment.get("total_rules_triggered", 0)
+    matched_rules = risk_assessment.get("matched_rules", [])
+    risk_score = risk_assessment.get("risk_score", 0)
 
     # Check if any strong phishing rule triggered
-    has_strong_rule = any(rule['rule_name'] in STRONG_RULE_NAMES for rule in matched_rules)
+    has_strong_rule = any(
+        rule["rule_name"] in STRONG_RULE_NAMES for rule in matched_rules
+    )
 
     # Case 1: Very low risk (likely legitimate)
     if risk_score <= 10:
@@ -50,17 +53,17 @@ def get_detection_confidence(risk_assessment: Dict) -> str:
 
 
 def generate_burmese_explanation(risk_assessment: Dict) -> str:
-    score = risk_assessment['risk_score']
-    level = risk_assessment['risk_level']
-    rules = risk_assessment.get('matched_rules', [])
-    ml_score = risk_assessment.get('ml_score')
+    score = risk_assessment["risk_score"]
+    level = risk_assessment["risk_level"]
+    rules = risk_assessment.get("matched_rules", [])
+    ml_score = risk_assessment.get("ml_score")
     confidence = get_detection_confidence(risk_assessment)
 
     level_map = {
         "Low": "နည်းပါးသည်",
         "Medium": "အလယ်အလတ်",
         "High": "မြင့်မားသည်",
-        "Critical": "အလွန်မြင့်မားသည်"
+        "Critical": "အလွန်မြင့်မားသည်",
     }
     burmese_level = level_map.get(level, level)
 

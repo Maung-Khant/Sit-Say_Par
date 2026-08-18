@@ -1,10 +1,13 @@
 # backend/infrastructure/models.py
-from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.orm import DeclarativeBase
 import datetime
+
+from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy.orm import DeclarativeBase
+
 
 class Base(DeclarativeBase):
     pass
+
 
 class AnalysisLog(Base):
     __tablename__ = "analysis_logs"

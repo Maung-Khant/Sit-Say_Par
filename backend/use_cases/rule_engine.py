@@ -1,10 +1,10 @@
 # backend/use_cases/rule_engine.py
 import re
+import threading
 from datetime import datetime
 from typing import Dict, List, Tuple
 
 import whois
-import threading
 
 RuleResult = Tuple[bool, int, str]
 
@@ -12,179 +12,183 @@ RuleResult = Tuple[bool, int, str]
 # Official domains – prevents false positives on legitimate sites
 # -------------------------------------------------------------------
 OFFICIAL_DOMAINS = {
-    'kbz': ['kbzbank.com', 'kbzpay.com', 'kbzlife.com', 'ibanking.kbzbank.com'],
-    'kbz bank': ['kbzbank.com', 'kbzlife.com', 'ibanking.kbzbank.com'],
-    'kbzbank': ['kbzbank.com', 'kbzlife.com', 'ibanking.kbzbank.com'],
-    'kanbawza': ['kbzbank.com'],
-    'kanbawza bank': ['kbzbank.com'],
-    'kbzpay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
-    'kbz pay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
-    'kpay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
-    'k pay': ['kbzpay.com', 'kbzpay.com.mm', 'kbzbank.com'],
-    'k+': ['kbzpay.com', 'kbzbank.com'],
-    'kplus': ['kbzpay.com', 'kbzbank.com'],
-    'k+wallet': ['kbzpay.com', 'kbzbank.com'],
-    'kbzlife': ['kbzlife.com'],
-    'cb': ['cbbank.com.mm'],
-    'cb bank': ['cbbank.com.mm'],
-    'cbbank': ['cbbank.com.mm'],
-    'co-operative bank': ['cbbank.com.mm'],
-    'cooperative bank': ['cbbank.com.mm'],
-    'cb pay': ['cbbank.com.mm'],
-    'cbpay': ['cbbank.com.mm'],
-    'aya': ['ayabank.com', 'ayaibanking.com'],
-    'aya bank': ['ayabank.com', 'ayaibanking.com'],
-    'ayabank': ['ayabank.com', 'ayaibanking.com'],
-    'ayeyarwady bank': ['ayeyarwadybank.com'],
-    'aya pay': ['ayabank.com', 'ayaibanking.com'],
-    'ayapay': ['ayabank.com', 'ayaibanking.com'],
-    'uab': ['uab.com.mm'],
-    'uab bank': ['uab.com.mm'],
-    'uabbank': ['uab.com.mm'],
-    'united amara bank': ['uab.com.mm'],
-    'uab pay': ['uab.com.mm'],
-    'uabpay': ['uab.com.mm'],
-    'a bank': ['abank.com.mm'],
-    'abank': ['abank.com.mm'],
-    'agd bank': ['agdbank.com'],
-    'agd': ['agdbank.com'],
-    'asia green development bank': ['agdbank.com'],
-    'yoma': ['yoma.com.mm'],
-    'yoma bank': ['yoma.com.mm'],
-    'yomabank': ['yoma.com.mm'],
-    'yoma pay': ['yoma.com.mm'],
-    'yomapay': ['yoma.com.mm'],
-    'mtb': ['mtb.com.mm'],
-    'mtb bank': ['mtb.com.mm'],
-    'myanma tourism bank': ['mtb.com.mm'],
-    'sathapana': ['sathapanabank.com'],
-    'sathapana bank': ['sathapanabank.com'],
-    'cbm': ['cbm.gov.mm'],
-    'central bank of myanmar': ['cbm.gov.mm'],
-    'mcb': ['mcb.com.mm'],
-    'myanmar citizens bank': ['mcb.com.mm'],
-    'mftb': ['mftb.gov.mm'],
-    'myanma foreign trade bank': ['mftb.gov.mm'],
-    'meb': ['meb.gov.mm'],
-    'myanma economic bank': ['meb.gov.mm'],
-    'wave': ['wavemoney.com.mm'],
-    'wave money': ['wavemoney.com.mm'],
-    'wavemoney': ['wavemoney.com.mm'],
-    'wave pay': ['wavemoney.com.mm'],
-    'wavepay': ['wavemoney.com.mm'],
-    'mpt': ['mpt.com.mm'],
-    'myanmar posts and telecommunications': ['mpt.com.mm'],
-    'telenor': ['telenor.com.mm'],
-    'telenor myanmar': ['telenor.com.mm'],
-    'ooredoo': ['ooredoo.com.mm'],
-    'ooredoo myanmar': ['ooredoo.com.mm'],
-    'mytel': ['mytel.com.mm'],
-    'atom': ['atom.com.mm'],
-    'atom myanmar': ['atom.com.mm'],
-    'google': ['google.com'],
-    'facebook': ['facebook.com'],
-    'messenger': ['facebook.com'],
-    'meta': ['meta.com'],
-    'gmail': ['google.com'],
-    'apple': ['apple.com'],
-    'icloud': ['icloud.com'],
-    'microsoft': ['microsoft.com'],
-    'outlook': ['outlook.com'],
-    'netflix': ['netflix.com'],
-    'whatsapp': ['whatsapp.com'],
-    'instagram': ['instagram.com'],
-    'tiktok': ['tiktok.com'],
-    'viber': ['viber.com'],
-    'telegram': ['telegram.org'],
-    'zoom': ['zoom.us'],
-    'paypal': ['paypal.com'],
-    'binance': ['binance.com'],
-    'octafx': ['octafx.com'],
-    'lazada': ['lazada.com.mm'],
-    'shopee': ['shopee.com.mm'],
-    'amazon': ['amazon.com'],
-    'aliexpress': ['aliexpress.com'],
-    'grab': ['grab.com'],
-    'foodpanda': ['foodpanda.com.mm'],
-    'city mart': ['citymart.com.mm'],
-    'citymart': ['citymart.com.mm'],
-    'shop.com.mm': ['shop.com.mm'],
-    'dhl': ['dhl.com'],
-    'fedex': ['fedex.com'],
-    'ups': ['ups.com'],
-    'royal express': ['royalexpress.com.mm'],
-    'yangon door2door': ['yangondoor2door.com'],
-    'j&t express': ['jtexpress.com'],
-    'jt express': ['jtexpress.com'],
-    'ird': ['ird.gov.mm'],
-    'internal revenue department': ['ird.gov.mm'],
-    'dme': ['dme.gov.mm'],
-    'department of myanmar examinations': ['dme.gov.mm'],
-    'mrf': ['mrf.gov.mm'],
-    'myanmar immigration': ['mip.gov.mm'],
-    'immigration department': ['mip.gov.mm'],
-    'ycdc': ['ycdc.gov.mm'],
-    'yangon city development committee': ['ycdc.gov.mm'],
-    'myanmar police force': ['myanmarpolice.gov.mm'],
-    'myanmar police': ['myanmarpolice.gov.mm'],
-    'rtad': ['rtad.gov.mm'],
-    'road transport administration department': ['rtad.gov.mm'],
-    'moee': ['moee.gov.mm'],
-    'yangon electricity supply corporation': ['yesc.com.mm'],
-    'yesc': ['yesc.com.mm'],
-    'myanmar customs department': ['customs.gov.mm'],
-    'myanmar customs': ['customs.gov.mm'],
-    'department of labour': ['mol.gov.mm'],
-    'uec': ['uec.gov.mm'],
-    'union election commission': ['uec.gov.mm'],
-    'dica': ['dica.gov.mm'],
-    'directorate of investment and company administration': ['dica.gov.mm'],
-    'kpmg': ['kpmg.com.mm'],
-    'quick loan': ['quickloan.com.mm'],
-    'quickloan': ['quickloan.com.mm'],
-    'air thanlwin': ['airthanlwin.com'],
-    'myanmar national airlines': ['flymna.com'],
-    'man airlines': ['flymna.com'],
-    'air kbz': ['airkbz.com'],
-    'fmi': ['fmi.com.mm'],
-    'first myanmar investment': ['fmi.com.mm'],
-    'capital diamond star group': ['cdsg.com.mm'],
-    'cdsg': ['cdsg.com.mm'],
-    'max myanmar': ['maxmyanmar.com'],
-    'shwe taung': ['shwetaung.com.mm'],
-    'yoma strategic holdings': ['yoma.com.mm'],
+    "kbz": ["kbzbank.com", "kbzpay.com", "kbzlife.com", "ibanking.kbzbank.com"],
+    "kbz bank": ["kbzbank.com", "kbzlife.com", "ibanking.kbzbank.com"],
+    "kbzbank": ["kbzbank.com", "kbzlife.com", "ibanking.kbzbank.com"],
+    "kanbawza": ["kbzbank.com"],
+    "kanbawza bank": ["kbzbank.com"],
+    "kbzpay": ["kbzpay.com", "kbzpay.com.mm", "kbzbank.com"],
+    "kbz pay": ["kbzpay.com", "kbzpay.com.mm", "kbzbank.com"],
+    "kpay": ["kbzpay.com", "kbzpay.com.mm", "kbzbank.com"],
+    "k pay": ["kbzpay.com", "kbzpay.com.mm", "kbzbank.com"],
+    "k+": ["kbzpay.com", "kbzbank.com"],
+    "kplus": ["kbzpay.com", "kbzbank.com"],
+    "k+wallet": ["kbzpay.com", "kbzbank.com"],
+    "kbzlife": ["kbzlife.com"],
+    "cb": ["cbbank.com.mm"],
+    "cb bank": ["cbbank.com.mm"],
+    "cbbank": ["cbbank.com.mm"],
+    "co-operative bank": ["cbbank.com.mm"],
+    "cooperative bank": ["cbbank.com.mm"],
+    "cb pay": ["cbbank.com.mm"],
+    "cbpay": ["cbbank.com.mm"],
+    "aya": ["ayabank.com", "ayaibanking.com"],
+    "aya bank": ["ayabank.com", "ayaibanking.com"],
+    "ayabank": ["ayabank.com", "ayaibanking.com"],
+    "ayeyarwady bank": ["ayeyarwadybank.com"],
+    "aya pay": ["ayabank.com", "ayaibanking.com"],
+    "ayapay": ["ayabank.com", "ayaibanking.com"],
+    "uab": ["uab.com.mm"],
+    "uab bank": ["uab.com.mm"],
+    "uabbank": ["uab.com.mm"],
+    "united amara bank": ["uab.com.mm"],
+    "uab pay": ["uab.com.mm"],
+    "uabpay": ["uab.com.mm"],
+    "a bank": ["abank.com.mm"],
+    "abank": ["abank.com.mm"],
+    "agd bank": ["agdbank.com"],
+    "agd": ["agdbank.com"],
+    "asia green development bank": ["agdbank.com"],
+    "yoma": ["yoma.com.mm"],
+    "yoma bank": ["yoma.com.mm"],
+    "yomabank": ["yoma.com.mm"],
+    "yoma pay": ["yoma.com.mm"],
+    "yomapay": ["yoma.com.mm"],
+    "mtb": ["mtb.com.mm"],
+    "mtb bank": ["mtb.com.mm"],
+    "myanma tourism bank": ["mtb.com.mm"],
+    "sathapana": ["sathapanabank.com"],
+    "sathapana bank": ["sathapanabank.com"],
+    "cbm": ["cbm.gov.mm"],
+    "central bank of myanmar": ["cbm.gov.mm"],
+    "mcb": ["mcb.com.mm"],
+    "myanmar citizens bank": ["mcb.com.mm"],
+    "mftb": ["mftb.gov.mm"],
+    "myanma foreign trade bank": ["mftb.gov.mm"],
+    "meb": ["meb.gov.mm"],
+    "myanma economic bank": ["meb.gov.mm"],
+    "wave": ["wavemoney.com.mm"],
+    "wave money": ["wavemoney.com.mm"],
+    "wavemoney": ["wavemoney.com.mm"],
+    "wave pay": ["wavemoney.com.mm"],
+    "wavepay": ["wavemoney.com.mm"],
+    "mpt": ["mpt.com.mm"],
+    "myanmar posts and telecommunications": ["mpt.com.mm"],
+    "telenor": ["telenor.com.mm"],
+    "telenor myanmar": ["telenor.com.mm"],
+    "ooredoo": ["ooredoo.com.mm"],
+    "ooredoo myanmar": ["ooredoo.com.mm"],
+    "mytel": ["mytel.com.mm"],
+    "atom": ["atom.com.mm"],
+    "atom myanmar": ["atom.com.mm"],
+    "google": ["google.com"],
+    "facebook": ["facebook.com"],
+    "messenger": ["facebook.com"],
+    "meta": ["meta.com"],
+    "gmail": ["google.com"],
+    "apple": ["apple.com"],
+    "icloud": ["icloud.com"],
+    "microsoft": ["microsoft.com"],
+    "outlook": ["outlook.com"],
+    "netflix": ["netflix.com"],
+    "whatsapp": ["whatsapp.com"],
+    "instagram": ["instagram.com"],
+    "tiktok": ["tiktok.com"],
+    "viber": ["viber.com"],
+    "telegram": ["telegram.org"],
+    "zoom": ["zoom.us"],
+    "paypal": ["paypal.com"],
+    "binance": ["binance.com"],
+    "octafx": ["octafx.com"],
+    "lazada": ["lazada.com.mm"],
+    "shopee": ["shopee.com.mm"],
+    "amazon": ["amazon.com"],
+    "aliexpress": ["aliexpress.com"],
+    "grab": ["grab.com"],
+    "foodpanda": ["foodpanda.com.mm"],
+    "city mart": ["citymart.com.mm"],
+    "citymart": ["citymart.com.mm"],
+    "shop.com.mm": ["shop.com.mm"],
+    "dhl": ["dhl.com"],
+    "fedex": ["fedex.com"],
+    "ups": ["ups.com"],
+    "royal express": ["royalexpress.com.mm"],
+    "yangon door2door": ["yangondoor2door.com"],
+    "j&t express": ["jtexpress.com"],
+    "jt express": ["jtexpress.com"],
+    "ird": ["ird.gov.mm"],
+    "internal revenue department": ["ird.gov.mm"],
+    "dme": ["dme.gov.mm"],
+    "department of myanmar examinations": ["dme.gov.mm"],
+    "mrf": ["mrf.gov.mm"],
+    "myanmar immigration": ["mip.gov.mm"],
+    "immigration department": ["mip.gov.mm"],
+    "ycdc": ["ycdc.gov.mm"],
+    "yangon city development committee": ["ycdc.gov.mm"],
+    "myanmar police force": ["myanmarpolice.gov.mm"],
+    "myanmar police": ["myanmarpolice.gov.mm"],
+    "rtad": ["rtad.gov.mm"],
+    "road transport administration department": ["rtad.gov.mm"],
+    "moee": ["moee.gov.mm"],
+    "yangon electricity supply corporation": ["yesc.com.mm"],
+    "yesc": ["yesc.com.mm"],
+    "myanmar customs department": ["customs.gov.mm"],
+    "myanmar customs": ["customs.gov.mm"],
+    "department of labour": ["mol.gov.mm"],
+    "uec": ["uec.gov.mm"],
+    "union election commission": ["uec.gov.mm"],
+    "dica": ["dica.gov.mm"],
+    "directorate of investment and company administration": ["dica.gov.mm"],
+    "kpmg": ["kpmg.com.mm"],
+    "quick loan": ["quickloan.com.mm"],
+    "quickloan": ["quickloan.com.mm"],
+    "air thanlwin": ["airthanlwin.com"],
+    "myanmar national airlines": ["flymna.com"],
+    "man airlines": ["flymna.com"],
+    "air kbz": ["airkbz.com"],
+    "fmi": ["fmi.com.mm"],
+    "first myanmar investment": ["fmi.com.mm"],
+    "capital diamond star group": ["cdsg.com.mm"],
+    "cdsg": ["cdsg.com.mm"],
+    "max myanmar": ["maxmyanmar.com"],
+    "shwe taung": ["shwetaung.com.mm"],
+    "yoma strategic holdings": ["yoma.com.mm"],
 }
+
 
 def _is_official_domain(domain: str, brand: str) -> bool:
     """Check if domain is official for the given brand, stripping www if necessary."""
     official_list = OFFICIAL_DOMAINS.get(brand, [])
     if not official_list:
         return False
-    domain_clean = domain.lower().rstrip('/')
-    if domain_clean.startswith('www.'):
+    domain_clean = domain.lower().rstrip("/")
+    if domain_clean.startswith("www."):
         domain_clean = domain_clean[4:]
     for official in official_list:
-        if domain_clean == official or domain_clean.endswith('.' + official):
+        if domain_clean == official or domain_clean.endswith("." + official):
             return True
     return False
+
 
 def is_domain_official_for_any(domain: str) -> bool:
     """
     Check if the given domain matches any official domain in OFFICIAL_DOMAINS.
     Prevents false positives when short brand substrings are detected.
     """
-    domain_clean = domain.lower().rstrip('/')
-    if domain_clean.startswith('www.'):
+    domain_clean = domain.lower().rstrip("/")
+    if domain_clean.startswith("www."):
         domain_clean = domain_clean[4:]
     for official_list in OFFICIAL_DOMAINS.values():
         for official in official_list:
-            if domain_clean == official or domain_clean.endswith('.' + official):
+            if domain_clean == official or domain_clean.endswith("." + official):
                 return True
     return False
+
 
 def is_any_official_domain(domain: str, brand_list: list) -> bool:
     """Check if domain is official for any given brand."""
     return any(_is_official_domain(domain, brand) for brand in brand_list)
+
 
 # -------------------------------------------------------------------
 # WHOIS helper
@@ -209,36 +213,51 @@ def get_domain_age_days(domain: str) -> int | None:
     thread.join(timeout=3)
     return result[0]
 
+
 # -------------------------------------------------------------------
 # Rule functions
 # -------------------------------------------------------------------
 def _rule_ip_address(features: Dict) -> RuleResult:
-    if features.get('is_ip', 0) == 1:
+    if features.get("is_ip", 0) == 1:
         return (True, 30, "IP လိပ်စာကို တိုက်ရိုက်အသုံးပြုထားသည် (domain name အစား)။")
     return (False, 0, "")
 
+
 def _rule_suspicious_tld(features: Dict) -> RuleResult:
-    domain = features.get('domain', '')
-    suspicious_tlds = ['.tk', '.ml', '.ga', '.cf', '.xyz', '.top', '.club',
-                       '.info', '.website', '.online', '.test', '.help']
-    tld_match = re.search(r'\.[a-z]{2,}$', domain)
-    tld = tld_match.group(0) if tld_match else ''
+    domain = features.get("domain", "")
+    suspicious_tlds = [
+        ".tk",
+        ".ml",
+        ".ga",
+        ".cf",
+        ".xyz",
+        ".top",
+        ".club",
+        ".info",
+        ".website",
+        ".online",
+        ".test",
+        ".help",
+    ]
+    tld_match = re.search(r"\.[a-z]{2,}$", domain)
+    tld = tld_match.group(0) if tld_match else ""
     if tld in suspicious_tlds:
         return (True, 30, f"သံသယဖြစ်ဖွယ် domain အဆုံးသတ် ({tld}) ကို သုံးထားသည်။")
     return (False, 0, "")
 
+
 def _rule_suspicious_keywords(features: Dict) -> RuleResult:
-    count = features.get('suspicious_keyword_count', 0)
+    count = features.get("suspicious_keyword_count", 0)
     if count == 0:
         return (False, 0, "")
 
-    brands_str = features.get('brands_detected', 'none')
-    domain = features.get('domain', '')
-    leetspeak_keyword_count = features.get('leetspeak_keyword_count', 0)
+    brands_str = features.get("brands_detected", "none")
+    domain = features.get("domain", "")
+    leetspeak_keyword_count = features.get("leetspeak_keyword_count", 0)
 
     # If domain is official for any detected brand, and no leetspeak keywords, suppress low severity
-    if brands_str != 'none' and leetspeak_keyword_count == 0:
-        brand_list = [b.strip() for b in brands_str.split(',')]
+    if brands_str != "none" and leetspeak_keyword_count == 0:
+        brand_list = [b.strip() for b in brands_str.split(",")]
         if is_any_official_domain(domain, brand_list):
             if count >= 3:
                 return (True, 20, f"သံသယဖြစ်ဖွယ် စာလုံးရေ {count} လုံး ပါဝင်သည်။")
@@ -247,116 +266,175 @@ def _rule_suspicious_keywords(features: Dict) -> RuleResult:
 
     # Normal path
     if count >= 3:
-        return (True, 35, f"သံသယဖြစ်ဖွယ် စာလုံးရေ {count} လုံး (login, verify, bonus, free စသည်) ပါဝင်သည်။")
+        return (
+            True,
+            35,
+            f"သံသယဖြစ်ဖွယ် စာလုံးရေ {count} လုံး (login, verify, bonus, free စသည်) ပါဝင်သည်။",
+        )
     elif count >= 1:
         return (True, 20, f"သံသယဖြစ်ဖွယ် စာလုံး {count} လုံး ပါဝင်သည်။")
     return (False, 0, "")
 
+
 def _rule_at_symbol(features: Dict) -> RuleResult:
-    if features.get('has_at_symbol', 0) == 1:
+    if features.get("has_at_symbol", 0) == 1:
         return (True, 20, "URL တွင် '@' သင်္ကေတ ပါဝင်သည်။")
     return (False, 0, "")
 
+
 def _rule_double_slash_redirect(features: Dict) -> RuleResult:
-    if features.get('has_double_slash', 0) == 1:
-        return (True, 15, "လမ်းကြောင်းထဲတွင် '//' ပါဝင်သဖြင့် redirect လုပ်နိုင်ခြေရှိသည်။")
+    if features.get("has_double_slash", 0) == 1:
+        return (
+            True,
+            15,
+            "လမ်းကြောင်းထဲတွင် '//' ပါဝင်သဖြင့် redirect လုပ်နိုင်ခြေရှိသည်။",
+        )
     return (False, 0, "")
+
 
 def _rule_https_in_path(features: Dict) -> RuleResult:
-    if features.get('has_https_in_path', 0) == 1:
-        return (True, 15, "လမ်းကြောင်းထဲတွင် 'https' ပါဝင်သဖြင့် လှည့်စားရန် ကြိုးပမ်းမှုဖြစ်နိုင်သည်။")
+    if features.get("has_https_in_path", 0) == 1:
+        return (
+            True,
+            15,
+            "လမ်းကြောင်းထဲတွင် 'https' ပါဝင်သဖြင့် လှည့်စားရန် ကြိုးပမ်းမှုဖြစ်နိုင်သည်။",
+        )
     return (False, 0, "")
+
 
 def _rule_domain_hyphens(features: Dict) -> RuleResult:
-    count = features.get('domain_hyphen_count', 0)
+    count = features.get("domain_hyphen_count", 0)
     if count >= 3:
-        return (True, 25, f"Domain တွင် hyphens {count} ခုပါဝင်သဖြင့် brand အတုခိုးရန် ကြိုးစားမှုဖြစ်နိုင်သည်။")
+        return (
+            True,
+            25,
+            f"Domain တွင် hyphens {count} ခုပါဝင်သဖြင့် brand အတုခိုးရန် ကြိုးစားမှုဖြစ်နိုင်သည်။",
+        )
     elif count >= 2:
-        return (True, 15, f"Domain တွင် hyphens {count} ခုပါဝင်သဖြင့် brand အတုခိုးရန် ကြိုးစားမှုဖြစ်နိုင်သည်။")
+        return (
+            True,
+            15,
+            f"Domain တွင် hyphens {count} ခုပါဝင်သဖြင့် brand အတုခိုးရန် ကြိုးစားမှုဖြစ်နိုင်သည်။",
+        )
     return (False, 0, "")
 
+
 def _rule_shortener(features: Dict) -> RuleResult:
-    if features.get('is_shortener', 0) == 1:
+    if features.get("is_shortener", 0) == 1:
         return (True, 15, "URL shortener ဝန်ဆောင်မှုကို သုံးထားသည်။")
     return (False, 0, "")
 
+
 def _rule_long_url(features: Dict) -> RuleResult:
-    length = features.get('url_length', 0)
+    length = features.get("url_length", 0)
     if length > 100:
         return (True, 10, f"URL အရှည် {length} လုံး ရှိသဖြင့် သံသယဖြစ်ဖွယ်ရှိသည်။")
     return (False, 0, "")
 
+
 def _rule_brand_impersonation(features: Dict) -> RuleResult:
-    brands_str = features.get('brands_detected', 'none')
-    if brands_str == 'none':
+    brands_str = features.get("brands_detected", "none")
+    if brands_str == "none":
         return (False, 0, "")
-    domain = features.get('domain', '')
+    domain = features.get("domain", "")
 
     # If the domain is official for any brand, skip this rule entirely.
     if is_domain_official_for_any(domain):
         return (False, 0, "")
 
-    brand_list = [b.strip() for b in brands_str.split(',')]
+    brand_list = [b.strip() for b in brands_str.split(",")]
     suspicious_brands = []
     for brand in brand_list:
         if not _is_official_domain(domain, brand):
             suspicious_brands.append(brand)
     if suspicious_brands:
-        return (True, 70, f"ဤ URL သည် {', '.join(suspicious_brands)} ၏ အမှတ်တံဆိပ်ကို အတုခိုးထားသည် — တရားဝင် မဟုတ်နိုင်ပါ။")
+        return (
+            True,
+            70,
+            f"ဤ URL သည် {', '.join(suspicious_brands)} ၏ အမှတ်တံဆိပ်ကို အတုခိုးထားသည် — တရားဝင် မဟုတ်နိုင်ပါ။",
+        )
     return (False, 0, "")
+
 
 def _rule_domain_numbers(features: Dict) -> RuleResult:
-    digit_count = features.get('domain_digit_count', 0)
+    digit_count = features.get("domain_digit_count", 0)
     if digit_count >= 4:
-        return (True, 5, f"Domain တွင် နံပါတ်များ ပုံမှန်မဟုတ်ဘဲ များစွာပါဝင်သည် ({digit_count} လုံး)။")
+        return (
+            True,
+            5,
+            f"Domain တွင် နံပါတ်များ ပုံမှန်မဟုတ်ဘဲ များစွာပါဝင်သည် ({digit_count} လုံး)။",
+        )
     return (False, 0, "")
 
+
 def _rule_lookalike_brand(features: Dict) -> RuleResult:
-    lookalikes_str = features.get('lookalike_brands_detected', 'none')
-    if lookalikes_str == 'none':
+    lookalikes_str = features.get("lookalike_brands_detected", "none")
+    if lookalikes_str == "none":
         return (False, 0, "")
-    domain = features.get('domain', '')
+    domain = features.get("domain", "")
     if is_domain_official_for_any(domain):
         return (False, 0, "")
-    brand_list = [b.strip() for b in lookalikes_str.split(',')]
+    brand_list = [b.strip() for b in lookalikes_str.split(",")]
     suspicious_brands = []
     for brand in brand_list:
         if not _is_official_domain(domain, brand):
             suspicious_brands.append(brand)
     if suspicious_brands:
-        return (True, 40, f"ဤ URL သည် {', '.join(suspicious_brands)} နှင့် ဆင်တူသော domain အမည်ကို အသုံးပြုထားသည် (typosquatting ဖြစ်နိုင်သည်)။")
+        return (
+            True,
+            40,
+            f"ဤ URL သည် {', '.join(suspicious_brands)} နှင့် ဆင်တူသော domain အမည်ကို အသုံးပြုထားသည် (typosquatting ဖြစ်နိုင်သည်)။",
+        )
     return (False, 0, "")
 
+
 def _rule_idn_homograph(features: Dict) -> RuleResult:
-    if features.get('has_idn', 0) == 1:
+    if features.get("has_idn", 0) == 1:
         return (True, 25, "ဤ domain တွင် IDN Homograph တိုက်ခိုက်မှု ပါဝင်သည်။")
     return (False, 0, "")
 
+
 def _rule_domain_age(features: Dict) -> RuleResult:
-    domain = features.get('domain', '')
+    domain = features.get("domain", "")
     if not domain:
         return (False, 0, "")
     age_days = get_domain_age_days(domain)
     if age_days is not None and age_days < 30:
-        return (True, 20, f"Domain သက်တမ်း {age_days} ရက်သာရှိသေးသည် (အသစ်ဖြစ်နိုင်သည်)။")
+        return (
+            True,
+            20,
+            f"Domain သက်တမ်း {age_days} ရက်သာရှိသေးသည် (အသစ်ဖြစ်နိုင်သည်)။",
+        )
     return (False, 0, "")
 
+
 def _rule_blacklist(features: Dict) -> RuleResult:
-    if features.get('in_blacklist', 0) == 1:
+    if features.get("in_blacklist", 0) == 1:
         return (True, 80, "ဤ domain သည် သိရှိထားသော phishing blacklist တွင် ပါဝင်သည်။")
     return (False, 0, "")
 
+
 def _rule_leetspeak_brand(features: Dict) -> RuleResult:
-    leet_brand_count = features.get('leet_brand_count', 0)
+    leet_brand_count = features.get("leet_brand_count", 0)
     if leet_brand_count > 0:
-        return (True, 30, "ဤ domain သည် leetspeak ကိုအသုံးပြု၍ brand အမည်ကို အတုခိုးထားသည်။")
+        return (
+            True,
+            30,
+            "ဤ domain သည် leetspeak ကိုအသုံးပြု၍ brand အမည်ကို အတုခိုးထားသည်။",
+        )
     return (False, 0, "")
 
+
 def _rule_leetspeak_keyword(features: Dict) -> RuleResult:
-    leetspeak_keyword_count = features.get('leetspeak_keyword_count', 0)
+    leetspeak_keyword_count = features.get("leetspeak_keyword_count", 0)
     if leetspeak_keyword_count > 0:
-        return (True, 60, "ဤ URL တွင် leetspeak သုံး၍ သံသယဖြစ်ဖွယ် စာလုံးများ (login, verify စသည်) ကို ဝှက်ထားသည်။")
+        return (
+            True,
+            60,
+            "ဤ URL တွင် leetspeak သုံး၍ သံသယဖြစ်ဖွယ် စာလုံးများ (login, verify စသည်) ကို ဝှက်ထားသည်။",
+        )
     return (False, 0, "")
+
 
 ALL_RULES = [
     _rule_ip_address,
@@ -377,14 +455,17 @@ ALL_RULES = [
     _rule_leetspeak_keyword,
 ]
 
+
 def run_rule_engine(features: Dict) -> List[Dict]:
     matched_rules = []
     for rule_func in ALL_RULES:
         triggered, score, reason = rule_func(features)
         if triggered:
-            matched_rules.append({
-                "rule_name": rule_func.__name__,
-                "score": score,
-                "reason": reason,
-            })
+            matched_rules.append(
+                {
+                    "rule_name": rule_func.__name__,
+                    "score": score,
+                    "reason": reason,
+                }
+            )
     return matched_rules

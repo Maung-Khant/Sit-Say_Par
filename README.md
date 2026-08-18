@@ -112,20 +112,54 @@ Sit-Say Par is a production-inspired cybersecurity platform designed for Myanmar
     # 📁 Project Structure
 
     ```text
-    Sit-Say_Par/
+        Sit-Say_Par/
     ├── backend/
-    │   ├── core/            # Domain entities (URL, RiskResult)
-    │   ├── use_cases/       # Feature extraction, rule engine, risk scoring, explanation
-    │   ├── infrastructure/ # Database, ML predictor, phishing blacklist
-    │   ├── api/             # FastAPI application, templates
-    │   └── adapters/        # Telegram bot, (future: Viber)
-    ├── tests/               # Unit and integration tests
-    ├── ml/                  # Model training scripts and datasets
-    ├── browser-extension/   # Chrome & Firefox extensions
-    ├── docs/                # Documentation
+    │   ├── adapters/
+    │   │   └── telegram/               # Telegram bot (webhook integrated)
+    │   ├── api/
+    │   │   ├── main.py                # FastAPI app + routes
+    │   │   └── templates/             # Jinja2 HTML templates
+    │   ├── core/
+    │   │   └── url.py                 # URL domain entity
+    │   ├── infrastructure/
+    │   │   ├── database.py            # SQLite setup (SQLAlchemy)
+    │   │   ├── ml_predictor.py        # ML model loader & predictor
+    │   │   ├── models.py              # Database models
+    │   │   └── phishing_blacklist.txt # Local blacklist
+    │   └── use_cases/
+    │       ├── analyze_url.py         # Main orchestration use case
+    │       ├── explanation_generator.py
+    │       ├── feature_extractor.py
+    │       ├── risk_scorer.py
+    │       └── rule_engine.py
+    ├── tests/                         # Unit & API tests
+    │   ├── conftest.py
+    │   ├── test_analyze_url.py
+    │   ├── test_api.py
+    │   ├── test_database.py
+    │   ├── test_explanation_generator.py
+    │   ├── test_feature_extractor.py
+    │   ├── test_ml_predictor.py
+    │   ├── test_risk_scorer.py
+    │   ├── test_rule_engine.py
+    │   └── test_url.py
+    ├── ml/
+    │   ├── data/                      # Datasets (CSV)
+    │   ├── models/                    # Trained model (joblib)
+    │   ├── collect_data.py
+    │   ├── generate_dataset.py
+    │   ├── generate_typosquat_dataset.py
+    │   └── train_model.py
+    ├── browser-extension/
+    │   ├── chrome/                    # Chrome extension (Manifest V3)
+    │   └── firefox/                   # Firefox extension (Manifest V2)
+    ├── docs/
+    │   └── user_guide_my.md           # Burmese user guide
     ├── .env.example
-    ├── requirements.txt
-    └── README.md    
+    ├── .gitignore
+    ├── LICENSE
+    ├── README.md
+    └── requirements.txt
     ```
     # 🧪 Testing
     

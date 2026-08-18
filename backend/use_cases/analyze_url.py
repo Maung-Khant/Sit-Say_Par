@@ -1,19 +1,24 @@
 # backend/use_cases/analyze_url.py
 import re
-from backend.core.url import URL
-from backend.use_cases.feature_extractor import extract_features
-from backend.use_cases.rule_engine import run_rule_engine
-from backend.use_cases.risk_scorer import generate_risk_assessment, determine_risk_level
-from backend.use_cases.explanation_generator import generate_burmese_explanation, get_detection_confidence
-from backend.infrastructure.ml_predictor import ml_predictor
 
-URL_PATTERN = re.compile(r'(https?://[^\s]+)')
+from backend.core.url import URL
+from backend.infrastructure.ml_predictor import ml_predictor
+from backend.use_cases.explanation_generator import (
+    generate_burmese_explanation, get_detection_confidence)
+from backend.use_cases.feature_extractor import extract_features
+from backend.use_cases.risk_scorer import (determine_risk_level,
+                                           generate_risk_assessment)
+from backend.use_cases.rule_engine import run_rule_engine
+
+URL_PATTERN = re.compile(r"(https?://[^\s]+)")
+
 
 def extract_first_url(text: str) -> str:
     matches = URL_PATTERN.findall(text)
     if matches:
-        return matches[0].rstrip(',.;:!?')
+        return matches[0].rstrip(",.;:!?")
     return text.strip()
+
 
 class AnalyzeURLUseCase:
     def execute(self, url_string: str) -> dict:
@@ -29,7 +34,7 @@ class AnalyzeURLUseCase:
         # 3. Rule engine
         matched_rules = run_rule_engine(features)
         rule_result = generate_risk_assessment(matched_rules)
-        rule_score = rule_result['risk_score']
+        rule_score = rule_result["risk_score"]
 
         # 4. ML prediction (if available)
         ml_prob = ml_predictor.predict_proba(features)
