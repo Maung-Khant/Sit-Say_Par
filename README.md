@@ -193,7 +193,7 @@ Sit-Say Par is a production-inspired cybersecurity platform designed for Myanmar
 
     # 📄 License
 
-    This project is licensed under the MIT License. See LICENSE for details.
+    This project is licensed under the MIT License. See [LICENSE](https://github.com/Maung-Khant/Sit-Say_Par/blob/main/LICENSE) for details.
 
     # 🙏 Acknowledgements
     * Myanmar brand data collected from public sources and CBM official lists.
