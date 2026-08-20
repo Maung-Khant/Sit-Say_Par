@@ -21,11 +21,7 @@ OFFICIAL_DOMAINS = {
     "kbz pay": ["kbzpay.com", "kbzpay.com.mm", "kbzbank.com"],
     "kpay": ["kbzpay.com", "kbzpay.com.mm", "kbzbank.com"],
     "k pay": ["kbzpay.com", "kbzpay.com.mm", "kbzbank.com"],
-    "k+": ["kbzpay.com", "kbzbank.com"],
-    "kplus": ["kbzpay.com", "kbzbank.com"],
-    "k+wallet": ["kbzpay.com", "kbzbank.com"],
     "kbzlife": ["kbzlife.com"],
-    "cb": ["cbbank.com.mm"],
     "cb bank": ["cbbank.com.mm"],
     "cbbank": ["cbbank.com.mm"],
     "co-operative bank": ["cbbank.com.mm"],
@@ -78,6 +74,7 @@ OFFICIAL_DOMAINS = {
     "telenor myanmar": ["telenor.com.mm"],
     "ooredoo": ["ooredoo.com.mm"],
     "ooredoo myanmar": ["ooredoo.com.mm"],
+    "u9": ["u9.com.mm"],
     "mytel": ["mytel.com.mm"],
     "atom": ["atom.com.mm"],
     "atom myanmar": ["atom.com.mm"],
@@ -326,9 +323,20 @@ def _rule_shortener(features: Dict) -> RuleResult:
 
 
 def _rule_long_url(features: Dict) -> RuleResult:
+    domain = features.get("domain", "")
+    if is_domain_official_for_any(domain):
+        return (False, 0, "")   # Official domains are exempt
+
     length = features.get("url_length", 0)
-    if length > 100:
-        return (True, 10, f"URL အရှည် {length} လုံး ရှိသဖြင့် သံသယဖြစ်ဖွယ်ရှိသည်။")
+    if length > 200:  # Increase threshold from 100 to 200
+        # Only trigger if other suspicious indicators exist
+        has_other_signal = (
+            features.get("suspicious_keyword_count", 0) > 0
+            or features.get("brands_detected", "none") != "none"
+            or features.get("suspicious_tld", 0) == 1
+        )
+        if has_other_signal:
+            return (True, 15, f"URL အရှည် {length} လုံး ရှိပြီး သံသယဖြစ်စရာ အချက်များပါဝင်သည်။")
     return (False, 0, "")
 
 

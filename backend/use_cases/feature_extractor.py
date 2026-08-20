@@ -91,7 +91,6 @@ SUSPICIOUS_TLDS = [
 
 # Comprehensive Myanmar brand list (lowercase) - includes banks, telcos, etc.
 MYANMAR_BRANDS = [
-    # (ယခင် list အတိုင်း အပြည့်အစုံ ထည့်ပါ)
     "kbz",
     "kbz bank",
     "kbzbank",
@@ -101,9 +100,7 @@ MYANMAR_BRANDS = [
     "kbz pay",
     "kpay",
     "k pay",
-    "k+",
     "kplus",
-    "k+wallet",
     "kbzlife",
     "cb",
     "cb bank",
@@ -219,6 +216,7 @@ MYANMAR_BRANDS = [
     "telenor myanmar",
     "ooredoo",
     "ooredoo myanmar",
+    "u9",
     "mytel",
     "kddi",
     "atom",
