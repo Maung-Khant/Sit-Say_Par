@@ -1,17 +1,26 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment variables / secrets
+.env
+
+# Database
 *.db
+
+# Backup files
 *.save
+
+# Build artifacts
 *.zip
 *.xpi
+
+# Private files (local only)
 private/
-venv/
-__pycache__/
-*.pyc
-.env
-.pytest_cache/venv/
-__pycache__/
-*.pyc
-.env
-private/
-*.db
-.pytest_cache/
+
+# Archived experimental files
 ml/archive/
